@@ -17,7 +17,7 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 - [x] `d3-claudemd2` CLAUDE.md v2: ingest outputs, parallel sessions, providers, revised schedule (Setup)
 - [~] `d3-git` git init, first commit, public GitHub repo (Setup, A)
 - [x] `d3-ingest` Ingest: local face blur, then sam.mp4 (5 fps), proxy.mp4 (H.264), audio.wav, meta.json; GPS stripped (Pipeline, A)
-- [ ] `d3-samclient` SAM 3.1 client + Python output parser + tests (Pipeline, A)
+- [x] `d3-samclient` SAM 3.1 client + Python output parser + tests (Pipeline, A)
 - [ ] `d3-samfirst` First SAM run: 1 clip × 3 phrases, confirm cost (Pipeline, A)
 - [ ] `d3-usage` Cache by video hash + usage logging to usage.jsonl (Pipeline, A)
 - [ ] `d3-agents102` Watch Agents 102 workshop (part 2) (Setup, You)

@@ -28,7 +28,7 @@ import hashlib
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import cv2
@@ -370,7 +370,7 @@ def ingest(
     meta = IngestMeta(
         video_sha256=digest,
         ingest_version=INGEST_VERSION,
-        created_at=datetime.now(timezone.utc).isoformat(),
+        created_at=datetime.now(UTC).isoformat(),
         source=src,
         sam=StreamMeta(width=sw, height=sh, fps=float(SAM_FPS), n_frames=len(frame_ms)),
         proxy=StreamMeta(width=sw, height=sh, fps=src.fps, n_frames=0),
