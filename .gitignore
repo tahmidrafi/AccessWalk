@@ -1,0 +1,28 @@
+# Secrets
+.env
+*.key
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+# Node
+node_modules/
+frontend/dist/
+# Data: raw video and model outputs stay local (privacy + size). Annotations are committed.
+data/raw/
+data/cache/
+data/out/
+*.mp4
+*.mov
+*.MOV
+*.wav
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Downloaded model weights
+models/
