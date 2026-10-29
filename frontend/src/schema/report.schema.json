@@ -1,0 +1,570 @@
+{
+  "$defs": {
+    "BBox": {
+      "description": "Axis-aligned box in ``sam.mp4`` pixels.",
+      "properties": {
+        "x1": {
+          "title": "X1",
+          "type": "integer"
+        },
+        "y1": {
+          "title": "Y1",
+          "type": "integer"
+        },
+        "x2": {
+          "title": "X2",
+          "type": "integer"
+        },
+        "y2": {
+          "title": "Y2",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x1",
+        "y1",
+        "x2",
+        "y2"
+      ],
+      "title": "BBox",
+      "type": "object"
+    },
+    "CheckSummary": {
+      "description": "What happened to each check on this route, so absence of findings is explicit.",
+      "properties": {
+        "check_id": {
+          "enum": [
+            "sidewalk_obstruction",
+            "surface_damage",
+            "missing_curb_ramp",
+            "sidewalk_ends",
+            "steps_without_ramp",
+            "missing_handrail",
+            "round_doorknob",
+            "narrow_passage"
+          ],
+          "title": "Check Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "ran",
+            "not_applicable",
+            "dropped"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "n_findings": {
+          "default": 0,
+          "title": "N Findings",
+          "type": "integer"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "check_id",
+        "status"
+      ],
+      "title": "CheckSummary",
+      "type": "object"
+    },
+    "Finding": {
+      "description": "One likely barrier, cited to a track and a frame.",
+      "properties": {
+        "finding_id": {
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "check_id": {
+          "enum": [
+            "sidewalk_obstruction",
+            "surface_damage",
+            "missing_curb_ramp",
+            "sidewalk_ends",
+            "steps_without_ramp",
+            "missing_handrail",
+            "round_doorknob",
+            "narrow_passage"
+          ],
+          "title": "Check Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "track_id": {
+          "title": "Track Id",
+          "type": "string"
+        },
+        "frame_index": {
+          "title": "Frame Index",
+          "type": "integer"
+        },
+        "frame_ms": {
+          "title": "Frame Ms",
+          "type": "integer"
+        },
+        "bbox": {
+          "$ref": "#/$defs/BBox"
+        },
+        "evidence_note": {
+          "title": "Evidence Note",
+          "type": "string"
+        },
+        "location_tag": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location Tag"
+        },
+        "verify_manually": {
+          "title": "Verify Manually",
+          "type": "boolean"
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference"
+        },
+        "related_track_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Related Track Ids",
+          "type": "array"
+        },
+        "frame_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame Url"
+        }
+      },
+      "required": [
+        "finding_id",
+        "check_id",
+        "title",
+        "severity",
+        "confidence",
+        "track_id",
+        "frame_index",
+        "frame_ms",
+        "bbox",
+        "evidence_note",
+        "verify_manually"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "LocationTag": {
+      "description": "A stretch of the route named in the narration (Muse Voice Transcribe).",
+      "properties": {
+        "start_ms": {
+          "title": "Start Ms",
+          "type": "integer"
+        },
+        "end_ms": {
+          "title": "End Ms",
+          "type": "integer"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_ms",
+        "end_ms",
+        "label"
+      ],
+      "title": "LocationTag",
+      "type": "object"
+    },
+    "RouteVerdict": {
+      "properties": {
+        "rating": {
+          "enum": [
+            "no_likely_barriers",
+            "caution",
+            "likely_blocked"
+          ],
+          "title": "Rating",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "key_finding_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Key Finding Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "rating",
+        "summary"
+      ],
+      "title": "RouteVerdict",
+      "type": "object"
+    },
+    "RunInfo": {
+      "description": "Provenance. ``agent_model`` is what actually served the agent calls (logged\nper call in ``usage.jsonl``); it is shown in the report for open-weight checks.",
+      "properties": {
+        "agent_provider": {
+          "title": "Agent Provider",
+          "type": "string"
+        },
+        "agent_model": {
+          "title": "Agent Model",
+          "type": "string"
+        },
+        "sam_model": {
+          "title": "Sam Model",
+          "type": "string"
+        },
+        "n_model_calls": {
+          "default": 0,
+          "title": "N Model Calls",
+          "type": "integer"
+        },
+        "cost_usd": {
+          "default": 0.0,
+          "title": "Cost Usd",
+          "type": "number"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "agent_provider",
+        "agent_model",
+        "sam_model",
+        "created_at"
+      ],
+      "title": "RunInfo",
+      "type": "object"
+    },
+    "Track": {
+      "description": "One object instance followed across frames by SAM 3.1.\n\n``track_id`` is unique within a report: ``<phrase-slug>-<object_id>``, e.g.\n``trash-bin-0``. ``object_id`` is SAM's ordinal for that phrase request.",
+      "properties": {
+        "track_id": {
+          "title": "Track Id",
+          "type": "string"
+        },
+        "phrase": {
+          "title": "Phrase",
+          "type": "string"
+        },
+        "object_id": {
+          "title": "Object Id",
+          "type": "integer"
+        },
+        "first_ms": {
+          "title": "First Ms",
+          "type": "integer"
+        },
+        "last_ms": {
+          "title": "Last Ms",
+          "type": "integer"
+        },
+        "n_frames": {
+          "title": "N Frames",
+          "type": "integer"
+        },
+        "mean_conf": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mean Conf"
+        },
+        "keyframe_index": {
+          "title": "Keyframe Index",
+          "type": "integer"
+        },
+        "keyframe_ms": {
+          "title": "Keyframe Ms",
+          "type": "integer"
+        },
+        "keyframe_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Keyframe Url"
+        },
+        "mask_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mask Url"
+        },
+        "boxes": {
+          "items": {
+            "$ref": "#/$defs/TrackBox"
+          },
+          "title": "Boxes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "track_id",
+        "phrase",
+        "object_id",
+        "first_ms",
+        "last_ms",
+        "n_frames",
+        "keyframe_index",
+        "keyframe_ms",
+        "boxes"
+      ],
+      "title": "Track",
+      "type": "object"
+    },
+    "TrackBox": {
+      "description": "One tracked object on one ``sam.mp4`` frame.",
+      "properties": {
+        "x1": {
+          "title": "X1",
+          "type": "integer"
+        },
+        "y1": {
+          "title": "Y1",
+          "type": "integer"
+        },
+        "x2": {
+          "title": "X2",
+          "type": "integer"
+        },
+        "y2": {
+          "title": "Y2",
+          "type": "integer"
+        },
+        "frame_index": {
+          "title": "Frame Index",
+          "type": "integer"
+        },
+        "frame_ms": {
+          "title": "Frame Ms",
+          "type": "integer"
+        },
+        "conf": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Conf"
+        }
+      },
+      "required": [
+        "x1",
+        "y1",
+        "x2",
+        "y2",
+        "frame_index",
+        "frame_ms"
+      ],
+      "title": "TrackBox",
+      "type": "object"
+    },
+    "VideoInfo": {
+      "properties": {
+        "video_sha256": {
+          "title": "Video Sha256",
+          "type": "string"
+        },
+        "duration_ms": {
+          "title": "Duration Ms",
+          "type": "integer"
+        },
+        "width": {
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "title": "Height",
+          "type": "integer"
+        },
+        "sam_fps": {
+          "title": "Sam Fps",
+          "type": "number"
+        },
+        "proxy_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proxy Url"
+        },
+        "frame_ms": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Frame Ms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "video_sha256",
+        "duration_ms",
+        "width",
+        "height",
+        "sam_fps",
+        "frame_ms"
+      ],
+      "title": "VideoInfo",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "report_id": {
+      "title": "Report Id",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "video": {
+      "$ref": "#/$defs/VideoInfo"
+    },
+    "verdict": {
+      "$ref": "#/$defs/RouteVerdict"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "tracks": {
+      "items": {
+        "$ref": "#/$defs/Track"
+      },
+      "title": "Tracks",
+      "type": "array"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/CheckSummary"
+      },
+      "title": "Checks",
+      "type": "array"
+    },
+    "location_tags": {
+      "items": {
+        "$ref": "#/$defs/LocationTag"
+      },
+      "title": "Location Tags",
+      "type": "array"
+    },
+    "run": {
+      "$ref": "#/$defs/RunInfo"
+    },
+    "disclaimer": {
+      "default": "Pre-trip screening from a phone video. Findings are likely barriers, not compliance determinations. Items marked 'verify manually' rest on depth, height or slope judged from video alone.",
+      "title": "Disclaimer",
+      "type": "string"
+    }
+  },
+  "required": [
+    "report_id",
+    "title",
+    "video",
+    "verdict",
+    "findings",
+    "tracks",
+    "checks",
+    "run"
+  ],
+  "title": "Report",
+  "type": "object"
+}

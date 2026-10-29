@@ -1,0 +1,3820 @@
+{
+  "schema_version": "1.0",
+  "report_id": "mock-64c947d94556",
+  "title": "Residential sidewalk past a large tree (mock)",
+  "video": {
+    "video_sha256": "64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7",
+    "duration_ms": 22201,
+    "width": 720,
+    "height": 1280,
+    "sam_fps": 5.0,
+    "proxy_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/proxy.mp4",
+    "frame_ms": [
+      0,
+      200,
+      400,
+      600,
+      800,
+      1000,
+      1200,
+      1400,
+      1600,
+      1800,
+      2000,
+      2200,
+      2400,
+      2600,
+      2800,
+      3000,
+      3200,
+      3400,
+      3600,
+      3800,
+      4000,
+      4200,
+      4400,
+      4600,
+      4800,
+      5000,
+      5200,
+      5400,
+      5600,
+      5800,
+      6000,
+      6200,
+      6400,
+      6600,
+      6800,
+      7000,
+      7200,
+      7400,
+      7600,
+      7800,
+      8000,
+      8200,
+      8400,
+      8600,
+      8800,
+      9000,
+      9200,
+      9400,
+      9600,
+      9800,
+      10000,
+      10200,
+      10400,
+      10600,
+      10800,
+      11000,
+      11200,
+      11400,
+      11600,
+      11800,
+      12000,
+      12200,
+      12400,
+      12600,
+      12800,
+      13000,
+      13200,
+      13400,
+      13600,
+      13800,
+      14000,
+      14200,
+      14400,
+      14600,
+      14800,
+      15000,
+      15200,
+      15400,
+      15600,
+      15800,
+      16000,
+      16200,
+      16400,
+      16600,
+      16800,
+      17000,
+      17200,
+      17400,
+      17600,
+      17800,
+      18000,
+      18200,
+      18400,
+      18600,
+      18800,
+      19000,
+      19200,
+      19400,
+      19600,
+      19800,
+      20000,
+      20200,
+      20400,
+      20600,
+      20800,
+      21000,
+      21200,
+      21400,
+      21600,
+      21800,
+      22000
+    ]
+  },
+  "verdict": {
+    "rating": "caution",
+    "summary": "Mostly a continuous sidewalk, but one slab beside the large tree (about 12 s in) is heaved enough to be a likely barrier for a wheelchair. Check its height before relying on this route.",
+    "key_finding_ids": [
+      "f1"
+    ]
+  },
+  "findings": [
+    {
+      "finding_id": "f1",
+      "check_id": "surface_damage",
+      "title": "Heaved slab beside a tree trunk",
+      "severity": "high",
+      "confidence": 0.82,
+      "track_id": "raised-sidewalk-slab-4",
+      "frame_index": 60,
+      "frame_ms": 12000,
+      "bbox": {
+        "x1": 20,
+        "y1": 399,
+        "x2": 549,
+        "y2": 1009
+      },
+      "evidence_note": "The slab next to the tree trunk is broken into several pieces that sit at different heights, with tree roots exposed along its outer edge. The raised edges look large enough to stop a front caster. Height is judged from video alone: verify on site.",
+      "location_tag": null,
+      "verify_manually": true,
+      "reference": "2010 ADA Standards 303.2-303.4: level changes over 1/4 in need a bevel; over 1/2 in, a ramp",
+      "related_track_ids": [
+        "tree-root-0"
+      ],
+      "frame_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/60.jpg"
+    },
+    {
+      "finding_id": "f2",
+      "check_id": "surface_damage",
+      "title": "Cracked, tilted slab before the tree",
+      "severity": "medium",
+      "confidence": 0.68,
+      "track_id": "raised-sidewalk-slab-1",
+      "frame_index": 54,
+      "frame_ms": 10800,
+      "bbox": {
+        "x1": 0,
+        "y1": 629,
+        "x2": 469,
+        "y2": 1230
+      },
+      "evidence_note": "This slab is cracked across and its outer corner has dropped toward the dirt strip, leaving a cross-slope and an uneven joint. Passable with care; the slope is judged from video alone.",
+      "location_tag": null,
+      "verify_manually": true,
+      "reference": "2010 ADA Standards 303.2-303.4: level changes over 1/4 in need a bevel; over 1/2 in, a ramp",
+      "related_track_ids": [],
+      "frame_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/54.jpg"
+    },
+    {
+      "finding_id": "f3",
+      "check_id": "surface_damage",
+      "title": "Crack across a slab, possibly uneven",
+      "severity": "low",
+      "confidence": 0.41,
+      "track_id": "raised-sidewalk-slab-6",
+      "frame_index": 90,
+      "frame_ms": 18000,
+      "bbox": {
+        "x1": 46,
+        "y1": 530,
+        "x2": 622,
+        "y2": 844
+      },
+      "evidence_note": "SAM flagged this slab as raised. A crack runs across it, but on re-check the two sides look nearly flush. Kept at low confidence; verify on site.",
+      "location_tag": null,
+      "verify_manually": true,
+      "reference": "2010 ADA Standards 303.2-303.4: level changes over 1/4 in need a bevel; over 1/2 in, a ramp",
+      "related_track_ids": [],
+      "frame_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/90.jpg"
+    }
+  ],
+  "tracks": [
+    {
+      "track_id": "raised-sidewalk-slab-0",
+      "phrase": "raised sidewalk slab",
+      "object_id": 0,
+      "first_ms": 10000,
+      "last_ms": 11000,
+      "n_frames": 6,
+      "mean_conf": 0.782,
+      "keyframe_index": 50,
+      "keyframe_ms": 10000,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/50.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 0,
+          "y1": 848,
+          "x2": 328,
+          "y2": 1279,
+          "frame_index": 50,
+          "frame_ms": 10000,
+          "conf": 0.7815700173377991
+        },
+        {
+          "x1": 0,
+          "y1": 901,
+          "x2": 325,
+          "y2": 1279,
+          "frame_index": 51,
+          "frame_ms": 10200,
+          "conf": 0.7815700173377991
+        },
+        {
+          "x1": 0,
+          "y1": 962,
+          "x2": 290,
+          "y2": 1279,
+          "frame_index": 52,
+          "frame_ms": 10400,
+          "conf": 0.7815700173377991
+        },
+        {
+          "x1": 0,
+          "y1": 1044,
+          "x2": 227,
+          "y2": 1279,
+          "frame_index": 53,
+          "frame_ms": 10600,
+          "conf": 0.7815700173377991
+        },
+        {
+          "x1": 0,
+          "y1": 1147,
+          "x2": 157,
+          "y2": 1279,
+          "frame_index": 54,
+          "frame_ms": 10800,
+          "conf": 0.7815700173377991
+        },
+        {
+          "x1": 0,
+          "y1": 1257,
+          "x2": 43,
+          "y2": 1279,
+          "frame_index": 55,
+          "frame_ms": 11000,
+          "conf": 0.7815700173377991
+        }
+      ]
+    },
+    {
+      "track_id": "raised-sidewalk-slab-1",
+      "phrase": "raised sidewalk slab",
+      "object_id": 1,
+      "first_ms": 10400,
+      "last_ms": 12600,
+      "n_frames": 12,
+      "mean_conf": 0.77,
+      "keyframe_index": 54,
+      "keyframe_ms": 10800,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/54.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 0,
+          "y1": 550,
+          "x2": 466,
+          "y2": 1030,
+          "frame_index": 52,
+          "frame_ms": 10400,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 588,
+          "x2": 470,
+          "y2": 1128,
+          "frame_index": 53,
+          "frame_ms": 10600,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 629,
+          "x2": 469,
+          "y2": 1230,
+          "frame_index": 54,
+          "frame_ms": 10800,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 649,
+          "x2": 442,
+          "y2": 1279,
+          "frame_index": 55,
+          "frame_ms": 11000,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 662,
+          "x2": 396,
+          "y2": 1279,
+          "frame_index": 56,
+          "frame_ms": 11200,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 704,
+          "x2": 351,
+          "y2": 1279,
+          "frame_index": 57,
+          "frame_ms": 11400,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 756,
+          "x2": 303,
+          "y2": 1279,
+          "frame_index": 58,
+          "frame_ms": 11600,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 811,
+          "x2": 249,
+          "y2": 1266,
+          "frame_index": 59,
+          "frame_ms": 11800,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 865,
+          "x2": 195,
+          "y2": 1230,
+          "frame_index": 60,
+          "frame_ms": 12000,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 945,
+          "x2": 147,
+          "y2": 1245,
+          "frame_index": 61,
+          "frame_ms": 12200,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 1017,
+          "x2": 104,
+          "y2": 1260,
+          "frame_index": 62,
+          "frame_ms": 12400,
+          "conf": 0.7697842121124268
+        },
+        {
+          "x1": 0,
+          "y1": 1120,
+          "x2": 39,
+          "y2": 1231,
+          "frame_index": 63,
+          "frame_ms": 12600,
+          "conf": 0.7697842121124268
+        }
+      ]
+    },
+    {
+      "track_id": "raised-sidewalk-slab-2",
+      "phrase": "raised sidewalk slab",
+      "object_id": 2,
+      "first_ms": 11200,
+      "last_ms": 15000,
+      "n_frames": 20,
+      "mean_conf": 0.714,
+      "keyframe_index": 73,
+      "keyframe_ms": 14600,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/73.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 474,
+          "y1": 186,
+          "x2": 719,
+          "y2": 339,
+          "frame_index": 56,
+          "frame_ms": 11200,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 466,
+          "y1": 170,
+          "x2": 719,
+          "y2": 333,
+          "frame_index": 57,
+          "frame_ms": 11400,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 460,
+          "y1": 156,
+          "x2": 719,
+          "y2": 332,
+          "frame_index": 58,
+          "frame_ms": 11600,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 456,
+          "y1": 138,
+          "x2": 719,
+          "y2": 322,
+          "frame_index": 59,
+          "frame_ms": 11800,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 464,
+          "y1": 117,
+          "x2": 719,
+          "y2": 304,
+          "frame_index": 60,
+          "frame_ms": 12000,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 491,
+          "y1": 153,
+          "x2": 719,
+          "y2": 307,
+          "frame_index": 61,
+          "frame_ms": 12200,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 518,
+          "y1": 152,
+          "x2": 719,
+          "y2": 316,
+          "frame_index": 62,
+          "frame_ms": 12400,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 535,
+          "y1": 168,
+          "x2": 719,
+          "y2": 320,
+          "frame_index": 63,
+          "frame_ms": 12600,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 551,
+          "y1": 192,
+          "x2": 719,
+          "y2": 333,
+          "frame_index": 64,
+          "frame_ms": 12800,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 582,
+          "y1": 230,
+          "x2": 719,
+          "y2": 352,
+          "frame_index": 65,
+          "frame_ms": 13000,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 620,
+          "y1": 271,
+          "x2": 719,
+          "y2": 368,
+          "frame_index": 66,
+          "frame_ms": 13200,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 646,
+          "y1": 301,
+          "x2": 719,
+          "y2": 381,
+          "frame_index": 67,
+          "frame_ms": 13400,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 636,
+          "y1": 313,
+          "x2": 719,
+          "y2": 400,
+          "frame_index": 68,
+          "frame_ms": 13600,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 603,
+          "y1": 329,
+          "x2": 719,
+          "y2": 440,
+          "frame_index": 69,
+          "frame_ms": 13800,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 565,
+          "y1": 334,
+          "x2": 719,
+          "y2": 478,
+          "frame_index": 70,
+          "frame_ms": 14000,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 514,
+          "y1": 342,
+          "x2": 719,
+          "y2": 533,
+          "frame_index": 71,
+          "frame_ms": 14200,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 485,
+          "y1": 371,
+          "x2": 719,
+          "y2": 601,
+          "frame_index": 72,
+          "frame_ms": 14400,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 485,
+          "y1": 396,
+          "x2": 719,
+          "y2": 632,
+          "frame_index": 73,
+          "frame_ms": 14600,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 531,
+          "y1": 415,
+          "x2": 719,
+          "y2": 622,
+          "frame_index": 74,
+          "frame_ms": 14800,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 627,
+          "y1": 480,
+          "x2": 719,
+          "y2": 592,
+          "frame_index": 75,
+          "frame_ms": 15000,
+          "conf": 0.7142857313156128
+        }
+      ]
+    },
+    {
+      "track_id": "raised-sidewalk-slab-3",
+      "phrase": "raised sidewalk slab",
+      "object_id": 3,
+      "first_ms": 11600,
+      "last_ms": 22000,
+      "n_frames": 53,
+      "mean_conf": 0.801,
+      "keyframe_index": 88,
+      "keyframe_ms": 17600,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/88.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 195,
+          "y1": 278,
+          "x2": 719,
+          "y2": 556,
+          "frame_index": 58,
+          "frame_ms": 11600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 166,
+          "y1": 268,
+          "x2": 719,
+          "y2": 570,
+          "frame_index": 59,
+          "frame_ms": 11800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 148,
+          "y1": 256,
+          "x2": 719,
+          "y2": 585,
+          "frame_index": 60,
+          "frame_ms": 12000,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 145,
+          "y1": 265,
+          "x2": 719,
+          "y2": 619,
+          "frame_index": 61,
+          "frame_ms": 12200,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 147,
+          "y1": 275,
+          "x2": 719,
+          "y2": 664,
+          "frame_index": 62,
+          "frame_ms": 12400,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 133,
+          "y1": 278,
+          "x2": 719,
+          "y2": 689,
+          "frame_index": 63,
+          "frame_ms": 12600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 112,
+          "y1": 289,
+          "x2": 719,
+          "y2": 743,
+          "frame_index": 64,
+          "frame_ms": 12800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 107,
+          "y1": 313,
+          "x2": 719,
+          "y2": 813,
+          "frame_index": 65,
+          "frame_ms": 13000,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 109,
+          "y1": 333,
+          "x2": 719,
+          "y2": 882,
+          "frame_index": 66,
+          "frame_ms": 13200,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 94,
+          "y1": 348,
+          "x2": 719,
+          "y2": 931,
+          "frame_index": 67,
+          "frame_ms": 13400,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 41,
+          "y1": 359,
+          "x2": 719,
+          "y2": 987,
+          "frame_index": 68,
+          "frame_ms": 13600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 387,
+          "x2": 719,
+          "y2": 1046,
+          "frame_index": 69,
+          "frame_ms": 13800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 402,
+          "x2": 719,
+          "y2": 1118,
+          "frame_index": 70,
+          "frame_ms": 14000,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 426,
+          "x2": 719,
+          "y2": 1216,
+          "frame_index": 71,
+          "frame_ms": 14200,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 455,
+          "x2": 719,
+          "y2": 1253,
+          "frame_index": 72,
+          "frame_ms": 14400,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 465,
+          "x2": 719,
+          "y2": 1220,
+          "frame_index": 73,
+          "frame_ms": 14600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 460,
+          "x2": 719,
+          "y2": 1166,
+          "frame_index": 74,
+          "frame_ms": 14800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 482,
+          "x2": 719,
+          "y2": 1127,
+          "frame_index": 75,
+          "frame_ms": 15000,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 470,
+          "x2": 719,
+          "y2": 1106,
+          "frame_index": 76,
+          "frame_ms": 15200,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 417,
+          "x2": 497,
+          "y2": 1100,
+          "frame_index": 77,
+          "frame_ms": 15400,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 377,
+          "x2": 518,
+          "y2": 1097,
+          "frame_index": 78,
+          "frame_ms": 15600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 360,
+          "x2": 562,
+          "y2": 1080,
+          "frame_index": 79,
+          "frame_ms": 15800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 343,
+          "x2": 612,
+          "y2": 1029,
+          "frame_index": 80,
+          "frame_ms": 16000,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 333,
+          "x2": 665,
+          "y2": 957,
+          "frame_index": 81,
+          "frame_ms": 16200,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 340,
+          "x2": 719,
+          "y2": 921,
+          "frame_index": 82,
+          "frame_ms": 16400,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 339,
+          "x2": 719,
+          "y2": 867,
+          "frame_index": 83,
+          "frame_ms": 16600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 38,
+          "y1": 343,
+          "x2": 719,
+          "y2": 837,
+          "frame_index": 84,
+          "frame_ms": 16800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 91,
+          "y1": 363,
+          "x2": 719,
+          "y2": 815,
+          "frame_index": 85,
+          "frame_ms": 17000,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 128,
+          "y1": 373,
+          "x2": 719,
+          "y2": 775,
+          "frame_index": 86,
+          "frame_ms": 17200,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 133,
+          "y1": 355,
+          "x2": 719,
+          "y2": 701,
+          "frame_index": 87,
+          "frame_ms": 17400,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 125,
+          "y1": 335,
+          "x2": 681,
+          "y2": 643,
+          "frame_index": 88,
+          "frame_ms": 17600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 106,
+          "y1": 322,
+          "x2": 624,
+          "y2": 607,
+          "frame_index": 89,
+          "frame_ms": 17800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 53,
+          "y1": 302,
+          "x2": 554,
+          "y2": 566,
+          "frame_index": 90,
+          "frame_ms": 18000,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 2,
+          "y1": 291,
+          "x2": 488,
+          "y2": 540,
+          "frame_index": 91,
+          "frame_ms": 18200,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 294,
+          "x2": 455,
+          "y2": 528,
+          "frame_index": 92,
+          "frame_ms": 18400,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 0,
+          "y1": 292,
+          "x2": 450,
+          "y2": 508,
+          "frame_index": 93,
+          "frame_ms": 18600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 21,
+          "y1": 282,
+          "x2": 451,
+          "y2": 478,
+          "frame_index": 94,
+          "frame_ms": 18800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 54,
+          "y1": 284,
+          "x2": 464,
+          "y2": 465,
+          "frame_index": 95,
+          "frame_ms": 19000,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 68,
+          "y1": 282,
+          "x2": 478,
+          "y2": 453,
+          "frame_index": 96,
+          "frame_ms": 19200,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 38,
+          "y1": 268,
+          "x2": 460,
+          "y2": 436,
+          "frame_index": 97,
+          "frame_ms": 19400,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 11,
+          "y1": 262,
+          "x2": 434,
+          "y2": 429,
+          "frame_index": 98,
+          "frame_ms": 19600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 6,
+          "y1": 269,
+          "x2": 434,
+          "y2": 438,
+          "frame_index": 99,
+          "frame_ms": 19800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 28,
+          "y1": 290,
+          "x2": 453,
+          "y2": 451,
+          "frame_index": 100,
+          "frame_ms": 20000,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 57,
+          "y1": 314,
+          "x2": 474,
+          "y2": 467,
+          "frame_index": 101,
+          "frame_ms": 20200,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 68,
+          "y1": 330,
+          "x2": 481,
+          "y2": 480,
+          "frame_index": 102,
+          "frame_ms": 20400,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 78,
+          "y1": 347,
+          "x2": 481,
+          "y2": 493,
+          "frame_index": 103,
+          "frame_ms": 20600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 83,
+          "y1": 365,
+          "x2": 484,
+          "y2": 507,
+          "frame_index": 104,
+          "frame_ms": 20800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 83,
+          "y1": 382,
+          "x2": 478,
+          "y2": 521,
+          "frame_index": 105,
+          "frame_ms": 21000,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 80,
+          "y1": 397,
+          "x2": 475,
+          "y2": 533,
+          "frame_index": 106,
+          "frame_ms": 21200,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 80,
+          "y1": 406,
+          "x2": 471,
+          "y2": 542,
+          "frame_index": 107,
+          "frame_ms": 21400,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 77,
+          "y1": 415,
+          "x2": 466,
+          "y2": 552,
+          "frame_index": 108,
+          "frame_ms": 21600,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 75,
+          "y1": 427,
+          "x2": 462,
+          "y2": 561,
+          "frame_index": 109,
+          "frame_ms": 21800,
+          "conf": 0.8012422323226929
+        },
+        {
+          "x1": 71,
+          "y1": 436,
+          "x2": 458,
+          "y2": 572,
+          "frame_index": 110,
+          "frame_ms": 22000,
+          "conf": 0.8012422323226929
+        }
+      ]
+    },
+    {
+      "track_id": "raised-sidewalk-slab-4",
+      "phrase": "raised sidewalk slab",
+      "object_id": 4,
+      "first_ms": 12000,
+      "last_ms": 14000,
+      "n_frames": 11,
+      "mean_conf": 0.766,
+      "keyframe_index": 60,
+      "keyframe_ms": 12000,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/60.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 20,
+          "y1": 399,
+          "x2": 549,
+          "y2": 1009,
+          "frame_index": 60,
+          "frame_ms": 12000,
+          "conf": 0.7655677795410156
+        },
+        {
+          "x1": 0,
+          "y1": 421,
+          "x2": 545,
+          "y2": 1079,
+          "frame_index": 61,
+          "frame_ms": 12200,
+          "conf": 0.7655677795410156
+        },
+        {
+          "x1": 0,
+          "y1": 440,
+          "x2": 547,
+          "y2": 1142,
+          "frame_index": 62,
+          "frame_ms": 12400,
+          "conf": 0.7655677795410156
+        },
+        {
+          "x1": 0,
+          "y1": 449,
+          "x2": 538,
+          "y2": 1204,
+          "frame_index": 63,
+          "frame_ms": 12600,
+          "conf": 0.7655677795410156
+        },
+        {
+          "x1": 0,
+          "y1": 468,
+          "x2": 525,
+          "y2": 1279,
+          "frame_index": 64,
+          "frame_ms": 12800,
+          "conf": 0.7655677795410156
+        },
+        {
+          "x1": 0,
+          "y1": 502,
+          "x2": 519,
+          "y2": 1279,
+          "frame_index": 65,
+          "frame_ms": 13000,
+          "conf": 0.7655677795410156
+        },
+        {
+          "x1": 0,
+          "y1": 524,
+          "x2": 506,
+          "y2": 1279,
+          "frame_index": 66,
+          "frame_ms": 13200,
+          "conf": 0.7655677795410156
+        },
+        {
+          "x1": 0,
+          "y1": 537,
+          "x2": 465,
+          "y2": 1279,
+          "frame_index": 67,
+          "frame_ms": 13400,
+          "conf": 0.7655677795410156
+        },
+        {
+          "x1": 0,
+          "y1": 548,
+          "x2": 376,
+          "y2": 1279,
+          "frame_index": 68,
+          "frame_ms": 13600,
+          "conf": 0.7655677795410156
+        },
+        {
+          "x1": 0,
+          "y1": 648,
+          "x2": 281,
+          "y2": 1273,
+          "frame_index": 69,
+          "frame_ms": 13800,
+          "conf": 0.7655677795410156
+        },
+        {
+          "x1": 0,
+          "y1": 837,
+          "x2": 161,
+          "y2": 1239,
+          "frame_index": 70,
+          "frame_ms": 14000,
+          "conf": 0.7655677795410156
+        }
+      ]
+    },
+    {
+      "track_id": "raised-sidewalk-slab-5",
+      "phrase": "raised sidewalk slab",
+      "object_id": 5,
+      "first_ms": 17200,
+      "last_ms": 22000,
+      "n_frames": 25,
+      "mean_conf": 0.706,
+      "keyframe_index": 90,
+      "keyframe_ms": 18000,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/90.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 333,
+          "y1": 1030,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 86,
+          "frame_ms": 17200,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 264,
+          "y1": 903,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 87,
+          "frame_ms": 17400,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 200,
+          "y1": 798,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 88,
+          "frame_ms": 17600,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 139,
+          "y1": 740,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 89,
+          "frame_ms": 17800,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 43,
+          "y1": 697,
+          "x2": 719,
+          "y2": 1186,
+          "frame_index": 90,
+          "frame_ms": 18000,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 665,
+          "x2": 694,
+          "y2": 1103,
+          "frame_index": 91,
+          "frame_ms": 18200,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 653,
+          "x2": 611,
+          "y2": 1040,
+          "frame_index": 92,
+          "frame_ms": 18400,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 630,
+          "x2": 558,
+          "y2": 970,
+          "frame_index": 93,
+          "frame_ms": 18600,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 596,
+          "x2": 516,
+          "y2": 886,
+          "frame_index": 94,
+          "frame_ms": 18800,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 579,
+          "x2": 493,
+          "y2": 835,
+          "frame_index": 95,
+          "frame_ms": 19000,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 568,
+          "x2": 469,
+          "y2": 809,
+          "frame_index": 96,
+          "frame_ms": 19200,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 550,
+          "x2": 413,
+          "y2": 785,
+          "frame_index": 97,
+          "frame_ms": 19400,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 540,
+          "x2": 356,
+          "y2": 775,
+          "frame_index": 98,
+          "frame_ms": 19600,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 544,
+          "x2": 334,
+          "y2": 776,
+          "frame_index": 99,
+          "frame_ms": 19800,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 555,
+          "x2": 332,
+          "y2": 775,
+          "frame_index": 100,
+          "frame_ms": 20000,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 565,
+          "x2": 332,
+          "y2": 775,
+          "frame_index": 101,
+          "frame_ms": 20200,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 572,
+          "x2": 321,
+          "y2": 767,
+          "frame_index": 102,
+          "frame_ms": 20400,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 580,
+          "x2": 314,
+          "y2": 768,
+          "frame_index": 103,
+          "frame_ms": 20600,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 592,
+          "x2": 314,
+          "y2": 776,
+          "frame_index": 104,
+          "frame_ms": 20800,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 606,
+          "x2": 311,
+          "y2": 788,
+          "frame_index": 105,
+          "frame_ms": 21000,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 618,
+          "x2": 310,
+          "y2": 799,
+          "frame_index": 106,
+          "frame_ms": 21200,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 627,
+          "x2": 308,
+          "y2": 807,
+          "frame_index": 107,
+          "frame_ms": 21400,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 637,
+          "x2": 305,
+          "y2": 815,
+          "frame_index": 108,
+          "frame_ms": 21600,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 645,
+          "x2": 302,
+          "y2": 822,
+          "frame_index": 109,
+          "frame_ms": 21800,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 656,
+          "x2": 299,
+          "y2": 834,
+          "frame_index": 110,
+          "frame_ms": 22000,
+          "conf": 0.7064220309257507
+        }
+      ]
+    },
+    {
+      "track_id": "raised-sidewalk-slab-6",
+      "phrase": "raised sidewalk slab",
+      "object_id": 6,
+      "first_ms": 18000,
+      "last_ms": 22000,
+      "n_frames": 21,
+      "mean_conf": 0.75,
+      "keyframe_index": 90,
+      "keyframe_ms": 18000,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/90.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 46,
+          "y1": 530,
+          "x2": 622,
+          "y2": 844,
+          "frame_index": 90,
+          "frame_ms": 18000,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 510,
+          "x2": 539,
+          "y2": 798,
+          "frame_index": 91,
+          "frame_ms": 18200,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 506,
+          "x2": 496,
+          "y2": 770,
+          "frame_index": 92,
+          "frame_ms": 18400,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 493,
+          "x2": 476,
+          "y2": 726,
+          "frame_index": 93,
+          "frame_ms": 18600,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 469,
+          "x2": 466,
+          "y2": 674,
+          "frame_index": 94,
+          "frame_ms": 18800,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 461,
+          "x2": 471,
+          "y2": 647,
+          "frame_index": 95,
+          "frame_ms": 19000,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 452,
+          "x2": 469,
+          "y2": 620,
+          "frame_index": 96,
+          "frame_ms": 19200,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 431,
+          "x2": 434,
+          "y2": 590,
+          "frame_index": 97,
+          "frame_ms": 19400,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 418,
+          "x2": 396,
+          "y2": 573,
+          "frame_index": 98,
+          "frame_ms": 19600,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 424,
+          "x2": 384,
+          "y2": 570,
+          "frame_index": 99,
+          "frame_ms": 19800,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 434,
+          "x2": 391,
+          "y2": 580,
+          "frame_index": 100,
+          "frame_ms": 20000,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 449,
+          "x2": 401,
+          "y2": 586,
+          "frame_index": 101,
+          "frame_ms": 20200,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 461,
+          "x2": 396,
+          "y2": 588,
+          "frame_index": 102,
+          "frame_ms": 20400,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 473,
+          "x2": 392,
+          "y2": 594,
+          "frame_index": 103,
+          "frame_ms": 20600,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 489,
+          "x2": 392,
+          "y2": 607,
+          "frame_index": 104,
+          "frame_ms": 20800,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 504,
+          "x2": 388,
+          "y2": 623,
+          "frame_index": 105,
+          "frame_ms": 21000,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 518,
+          "x2": 388,
+          "y2": 636,
+          "frame_index": 106,
+          "frame_ms": 21200,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 530,
+          "x2": 384,
+          "y2": 646,
+          "frame_index": 107,
+          "frame_ms": 21400,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 540,
+          "x2": 383,
+          "y2": 657,
+          "frame_index": 108,
+          "frame_ms": 21600,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 550,
+          "x2": 376,
+          "y2": 666,
+          "frame_index": 109,
+          "frame_ms": 21800,
+          "conf": 0.7500000596046448
+        },
+        {
+          "x1": 0,
+          "y1": 562,
+          "x2": 374,
+          "y2": 676,
+          "frame_index": 110,
+          "frame_ms": 22000,
+          "conf": 0.7500000596046448
+        }
+      ]
+    },
+    {
+      "track_id": "raised-sidewalk-slab-7",
+      "phrase": "raised sidewalk slab",
+      "object_id": 7,
+      "first_ms": 18000,
+      "last_ms": 22000,
+      "n_frames": 21,
+      "mean_conf": 0.758,
+      "keyframe_index": 94,
+      "keyframe_ms": 18800,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/94.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 59,
+          "y1": 1082,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 90,
+          "frame_ms": 18000,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 1006,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 91,
+          "frame_ms": 18200,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 975,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 92,
+          "frame_ms": 18400,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 931,
+          "x2": 661,
+          "y2": 1279,
+          "frame_index": 93,
+          "frame_ms": 18600,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 871,
+          "x2": 593,
+          "y2": 1279,
+          "frame_index": 94,
+          "frame_ms": 18800,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 835,
+          "x2": 536,
+          "y2": 1279,
+          "frame_index": 95,
+          "frame_ms": 19000,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 809,
+          "x2": 474,
+          "y2": 1279,
+          "frame_index": 96,
+          "frame_ms": 19200,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 779,
+          "x2": 403,
+          "y2": 1279,
+          "frame_index": 97,
+          "frame_ms": 19400,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 763,
+          "x2": 333,
+          "y2": 1279,
+          "frame_index": 98,
+          "frame_ms": 19600,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 760,
+          "x2": 299,
+          "y2": 1279,
+          "frame_index": 99,
+          "frame_ms": 19800,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 758,
+          "x2": 284,
+          "y2": 1279,
+          "frame_index": 100,
+          "frame_ms": 20000,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 752,
+          "x2": 268,
+          "y2": 1279,
+          "frame_index": 101,
+          "frame_ms": 20200,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 744,
+          "x2": 239,
+          "y2": 1222,
+          "frame_index": 102,
+          "frame_ms": 20400,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 744,
+          "x2": 231,
+          "y2": 1172,
+          "frame_index": 103,
+          "frame_ms": 20600,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 753,
+          "x2": 227,
+          "y2": 1152,
+          "frame_index": 104,
+          "frame_ms": 20800,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 766,
+          "x2": 227,
+          "y2": 1172,
+          "frame_index": 105,
+          "frame_ms": 21000,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 779,
+          "x2": 225,
+          "y2": 1183,
+          "frame_index": 106,
+          "frame_ms": 21200,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 788,
+          "x2": 228,
+          "y2": 1197,
+          "frame_index": 107,
+          "frame_ms": 21400,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 799,
+          "x2": 224,
+          "y2": 1197,
+          "frame_index": 108,
+          "frame_ms": 21600,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 808,
+          "x2": 220,
+          "y2": 1195,
+          "frame_index": 109,
+          "frame_ms": 21800,
+          "conf": 0.7575758099555969
+        },
+        {
+          "x1": 0,
+          "y1": 818,
+          "x2": 220,
+          "y2": 1213,
+          "frame_index": 110,
+          "frame_ms": 22000,
+          "conf": 0.7575758099555969
+        }
+      ]
+    },
+    {
+      "track_id": "tree-root-0",
+      "phrase": "tree root",
+      "object_id": 0,
+      "first_ms": 12200,
+      "last_ms": 15400,
+      "n_frames": 7,
+      "mean_conf": 0.808,
+      "keyframe_index": 62,
+      "keyframe_ms": 12400,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/62.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 320,
+          "y1": 994,
+          "x2": 487,
+          "y2": 1190,
+          "frame_index": 61,
+          "frame_ms": 12200,
+          "conf": 0.8083832263946533
+        },
+        {
+          "x1": 279,
+          "y1": 1052,
+          "x2": 461,
+          "y2": 1276,
+          "frame_index": 62,
+          "frame_ms": 12400,
+          "conf": 0.8083832263946533
+        },
+        {
+          "x1": 253,
+          "y1": 1109,
+          "x2": 420,
+          "y2": 1279,
+          "frame_index": 63,
+          "frame_ms": 12600,
+          "conf": 0.8083832263946533
+        },
+        {
+          "x1": 189,
+          "y1": 1201,
+          "x2": 210,
+          "y2": 1279,
+          "frame_index": 64,
+          "frame_ms": 12800,
+          "conf": 0.8083832263946533
+        },
+        {
+          "x1": 158,
+          "y1": 1252,
+          "x2": 254,
+          "y2": 1279,
+          "frame_index": 75,
+          "frame_ms": 15000,
+          "conf": 0.8083832263946533
+        },
+        {
+          "x1": 0,
+          "y1": 1244,
+          "x2": 181,
+          "y2": 1279,
+          "frame_index": 76,
+          "frame_ms": 15200,
+          "conf": 0.8083832263946533
+        },
+        {
+          "x1": 0,
+          "y1": 1210,
+          "x2": 56,
+          "y2": 1238,
+          "frame_index": 77,
+          "frame_ms": 15400,
+          "conf": 0.8083832263946533
+        }
+      ]
+    },
+    {
+      "track_id": "tree-root-1",
+      "phrase": "tree root",
+      "object_id": 1,
+      "first_ms": 19600,
+      "last_ms": 22000,
+      "n_frames": 13,
+      "mean_conf": 0.704,
+      "keyframe_index": 102,
+      "keyframe_ms": 20400,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/102.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 376,
+          "y1": 758,
+          "x2": 719,
+          "y2": 880,
+          "frame_index": 98,
+          "frame_ms": 19600,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 344,
+          "y1": 760,
+          "x2": 719,
+          "y2": 879,
+          "frame_index": 99,
+          "frame_ms": 19800,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 326,
+          "y1": 764,
+          "x2": 719,
+          "y2": 885,
+          "frame_index": 100,
+          "frame_ms": 20000,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 314,
+          "y1": 766,
+          "x2": 719,
+          "y2": 887,
+          "frame_index": 101,
+          "frame_ms": 20200,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 289,
+          "y1": 763,
+          "x2": 673,
+          "y2": 881,
+          "frame_index": 102,
+          "frame_ms": 20400,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 276,
+          "y1": 764,
+          "x2": 636,
+          "y2": 878,
+          "frame_index": 103,
+          "frame_ms": 20600,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 273,
+          "y1": 770,
+          "x2": 632,
+          "y2": 885,
+          "frame_index": 104,
+          "frame_ms": 20800,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 268,
+          "y1": 784,
+          "x2": 633,
+          "y2": 896,
+          "frame_index": 105,
+          "frame_ms": 21000,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 269,
+          "y1": 797,
+          "x2": 623,
+          "y2": 904,
+          "frame_index": 106,
+          "frame_ms": 21200,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 269,
+          "y1": 805,
+          "x2": 629,
+          "y2": 908,
+          "frame_index": 107,
+          "frame_ms": 21400,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 266,
+          "y1": 811,
+          "x2": 626,
+          "y2": 915,
+          "frame_index": 108,
+          "frame_ms": 21600,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 262,
+          "y1": 815,
+          "x2": 621,
+          "y2": 922,
+          "frame_index": 109,
+          "frame_ms": 21800,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 261,
+          "y1": 827,
+          "x2": 618,
+          "y2": 931,
+          "frame_index": 110,
+          "frame_ms": 22000,
+          "conf": 0.7037037014961243
+        }
+      ]
+    },
+    {
+      "track_id": "sidewalk-0",
+      "phrase": "sidewalk",
+      "object_id": 0,
+      "first_ms": 0,
+      "last_ms": 22000,
+      "n_frames": 111,
+      "mean_conf": 0.844,
+      "keyframe_index": 1,
+      "keyframe_ms": 200,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/1.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 713,
+          "y2": 1279,
+          "frame_index": 0,
+          "frame_ms": 0,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 1,
+          "frame_ms": 200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 3,
+          "x2": 718,
+          "y2": 1279,
+          "frame_index": 2,
+          "frame_ms": 400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 15,
+          "x2": 710,
+          "y2": 1279,
+          "frame_index": 3,
+          "frame_ms": 600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 59,
+          "x2": 706,
+          "y2": 1279,
+          "frame_index": 4,
+          "frame_ms": 800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 100,
+          "x2": 702,
+          "y2": 1279,
+          "frame_index": 5,
+          "frame_ms": 1000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 135,
+          "x2": 691,
+          "y2": 1279,
+          "frame_index": 6,
+          "frame_ms": 1200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 165,
+          "x2": 684,
+          "y2": 1279,
+          "frame_index": 7,
+          "frame_ms": 1400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 184,
+          "x2": 683,
+          "y2": 1279,
+          "frame_index": 8,
+          "frame_ms": 1600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 186,
+          "x2": 679,
+          "y2": 1279,
+          "frame_index": 9,
+          "frame_ms": 1800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 202,
+          "x2": 708,
+          "y2": 1279,
+          "frame_index": 10,
+          "frame_ms": 2000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 10,
+          "y1": 187,
+          "x2": 701,
+          "y2": 1279,
+          "frame_index": 11,
+          "frame_ms": 2200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 192,
+          "x2": 650,
+          "y2": 1279,
+          "frame_index": 12,
+          "frame_ms": 2400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 192,
+          "x2": 651,
+          "y2": 1279,
+          "frame_index": 13,
+          "frame_ms": 2600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 199,
+          "x2": 630,
+          "y2": 1279,
+          "frame_index": 14,
+          "frame_ms": 2800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 118,
+          "y1": 190,
+          "x2": 616,
+          "y2": 1279,
+          "frame_index": 15,
+          "frame_ms": 3000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 94,
+          "y1": 174,
+          "x2": 622,
+          "y2": 1279,
+          "frame_index": 16,
+          "frame_ms": 3200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 88,
+          "y1": 157,
+          "x2": 647,
+          "y2": 1279,
+          "frame_index": 17,
+          "frame_ms": 3400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 56,
+          "y1": 143,
+          "x2": 623,
+          "y2": 1279,
+          "frame_index": 18,
+          "frame_ms": 3600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 9,
+          "y1": 138,
+          "x2": 645,
+          "y2": 1279,
+          "frame_index": 19,
+          "frame_ms": 3800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 131,
+          "x2": 471,
+          "y2": 1279,
+          "frame_index": 20,
+          "frame_ms": 4000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 6,
+          "y1": 126,
+          "x2": 491,
+          "y2": 1279,
+          "frame_index": 21,
+          "frame_ms": 4200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 100,
+          "y1": 120,
+          "x2": 513,
+          "y2": 1279,
+          "frame_index": 22,
+          "frame_ms": 4400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 135,
+          "y1": 106,
+          "x2": 528,
+          "y2": 1279,
+          "frame_index": 23,
+          "frame_ms": 4600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 106,
+          "y1": 100,
+          "x2": 533,
+          "y2": 1279,
+          "frame_index": 24,
+          "frame_ms": 4800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 65,
+          "y1": 89,
+          "x2": 533,
+          "y2": 1279,
+          "frame_index": 25,
+          "frame_ms": 5000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 28,
+          "y1": 85,
+          "x2": 550,
+          "y2": 1279,
+          "frame_index": 26,
+          "frame_ms": 5200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 73,
+          "x2": 579,
+          "y2": 1279,
+          "frame_index": 27,
+          "frame_ms": 5400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 68,
+          "x2": 630,
+          "y2": 1279,
+          "frame_index": 28,
+          "frame_ms": 5600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 60,
+          "x2": 663,
+          "y2": 1279,
+          "frame_index": 29,
+          "frame_ms": 5800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 67,
+          "x2": 678,
+          "y2": 1279,
+          "frame_index": 30,
+          "frame_ms": 6000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 84,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 31,
+          "frame_ms": 6200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 33,
+          "y1": 104,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 32,
+          "frame_ms": 6400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 95,
+          "y1": 122,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 33,
+          "frame_ms": 6600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 150,
+          "y1": 136,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 34,
+          "frame_ms": 6800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 189,
+          "y1": 140,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 35,
+          "frame_ms": 7000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 218,
+          "y1": 147,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 36,
+          "frame_ms": 7200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 221,
+          "y1": 151,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 37,
+          "frame_ms": 7400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 182,
+          "y1": 149,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 38,
+          "frame_ms": 7600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 118,
+          "y1": 138,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 39,
+          "frame_ms": 7800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 38,
+          "y1": 122,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 40,
+          "frame_ms": 8000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 101,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 41,
+          "frame_ms": 8200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 76,
+          "x2": 691,
+          "y2": 1279,
+          "frame_index": 42,
+          "frame_ms": 8400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 61,
+          "x2": 652,
+          "y2": 1279,
+          "frame_index": 43,
+          "frame_ms": 8600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 49,
+          "x2": 584,
+          "y2": 1279,
+          "frame_index": 44,
+          "frame_ms": 8800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 17,
+          "x2": 497,
+          "y2": 1279,
+          "frame_index": 45,
+          "frame_ms": 9000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 460,
+          "y2": 1279,
+          "frame_index": 46,
+          "frame_ms": 9200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 480,
+          "y2": 1279,
+          "frame_index": 47,
+          "frame_ms": 9400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 531,
+          "y2": 1279,
+          "frame_index": 48,
+          "frame_ms": 9600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 612,
+          "y2": 1279,
+          "frame_index": 49,
+          "frame_ms": 9800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 716,
+          "y2": 1279,
+          "frame_index": 50,
+          "frame_ms": 10000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 51,
+          "frame_ms": 10200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 52,
+          "frame_ms": 10400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 4,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 53,
+          "frame_ms": 10600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 110,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 54,
+          "frame_ms": 10800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 153,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 55,
+          "frame_ms": 11000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 150,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 56,
+          "frame_ms": 11200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 138,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 57,
+          "frame_ms": 11400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 131,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 58,
+          "frame_ms": 11600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 121,
+          "x2": 719,
+          "y2": 1263,
+          "frame_index": 59,
+          "frame_ms": 11800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 118,
+          "x2": 719,
+          "y2": 1226,
+          "frame_index": 60,
+          "frame_ms": 12000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 126,
+          "x2": 719,
+          "y2": 1238,
+          "frame_index": 61,
+          "frame_ms": 12200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 155,
+          "x2": 719,
+          "y2": 1253,
+          "frame_index": 62,
+          "frame_ms": 12400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 171,
+          "x2": 719,
+          "y2": 1226,
+          "frame_index": 63,
+          "frame_ms": 12600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 195,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 64,
+          "frame_ms": 12800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 234,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 65,
+          "frame_ms": 13000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 274,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 66,
+          "frame_ms": 13200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 305,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 67,
+          "frame_ms": 13400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 317,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 68,
+          "frame_ms": 13600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 332,
+          "x2": 719,
+          "y2": 1272,
+          "frame_index": 69,
+          "frame_ms": 13800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 338,
+          "x2": 719,
+          "y2": 1217,
+          "frame_index": 70,
+          "frame_ms": 14000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 344,
+          "x2": 719,
+          "y2": 1221,
+          "frame_index": 71,
+          "frame_ms": 14200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 374,
+          "x2": 719,
+          "y2": 1265,
+          "frame_index": 72,
+          "frame_ms": 14400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 397,
+          "x2": 719,
+          "y2": 1227,
+          "frame_index": 73,
+          "frame_ms": 14600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 418,
+          "x2": 719,
+          "y2": 1169,
+          "frame_index": 74,
+          "frame_ms": 14800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 484,
+          "x2": 719,
+          "y2": 1128,
+          "frame_index": 75,
+          "frame_ms": 15000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 471,
+          "x2": 719,
+          "y2": 1107,
+          "frame_index": 76,
+          "frame_ms": 15200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 418,
+          "x2": 719,
+          "y2": 1151,
+          "frame_index": 77,
+          "frame_ms": 15400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 378,
+          "x2": 719,
+          "y2": 1270,
+          "frame_index": 78,
+          "frame_ms": 15600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 339,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 79,
+          "frame_ms": 15800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 273,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 80,
+          "frame_ms": 16000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 201,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 81,
+          "frame_ms": 16200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 122,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 82,
+          "frame_ms": 16400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 28,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 83,
+          "frame_ms": 16600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 3,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 84,
+          "frame_ms": 16800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1258,
+          "frame_index": 85,
+          "frame_ms": 17000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 70,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1187,
+          "frame_index": 86,
+          "frame_ms": 17200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 113,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1068,
+          "frame_index": 87,
+          "frame_ms": 17400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 125,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 88,
+          "frame_ms": 17600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 107,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 89,
+          "frame_ms": 17800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 45,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 90,
+          "frame_ms": 18000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1279,
+          "frame_index": 91,
+          "frame_ms": 18200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 717,
+          "y2": 1279,
+          "frame_index": 92,
+          "frame_ms": 18400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 657,
+          "y2": 1279,
+          "frame_index": 93,
+          "frame_ms": 18600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 589,
+          "y2": 1279,
+          "frame_index": 94,
+          "frame_ms": 18800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 535,
+          "y2": 1279,
+          "frame_index": 95,
+          "frame_ms": 19000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 513,
+          "y2": 1279,
+          "frame_index": 96,
+          "frame_ms": 19200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 518,
+          "y2": 1279,
+          "frame_index": 97,
+          "frame_ms": 19400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 516,
+          "y2": 1279,
+          "frame_index": 98,
+          "frame_ms": 19600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 9,
+          "x2": 539,
+          "y2": 1279,
+          "frame_index": 99,
+          "frame_ms": 19800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 618,
+          "y2": 1279,
+          "frame_index": 100,
+          "frame_ms": 20000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 687,
+          "y2": 1279,
+          "frame_index": 101,
+          "frame_ms": 20200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 719,
+          "y2": 1220,
+          "frame_index": 102,
+          "frame_ms": 20400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 31,
+          "x2": 719,
+          "y2": 1151,
+          "frame_index": 103,
+          "frame_ms": 20600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 58,
+          "x2": 719,
+          "y2": 1144,
+          "frame_index": 104,
+          "frame_ms": 20800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 73,
+          "x2": 719,
+          "y2": 1159,
+          "frame_index": 105,
+          "frame_ms": 21000,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 77,
+          "x2": 719,
+          "y2": 1176,
+          "frame_index": 106,
+          "frame_ms": 21200,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 83,
+          "x2": 719,
+          "y2": 1186,
+          "frame_index": 107,
+          "frame_ms": 21400,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 65,
+          "x2": 719,
+          "y2": 1182,
+          "frame_index": 108,
+          "frame_ms": 21600,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 67,
+          "x2": 719,
+          "y2": 1187,
+          "frame_index": 109,
+          "frame_ms": 21800,
+          "conf": 0.8439024686813354
+        },
+        {
+          "x1": 0,
+          "y1": 84,
+          "x2": 719,
+          "y2": 1199,
+          "frame_index": 110,
+          "frame_ms": 22000,
+          "conf": 0.8439024686813354
+        }
+      ]
+    },
+    {
+      "track_id": "sidewalk-1",
+      "phrase": "sidewalk",
+      "object_id": 1,
+      "first_ms": 20600,
+      "last_ms": 22000,
+      "n_frames": 8,
+      "mean_conf": 0.762,
+      "keyframe_index": 107,
+      "keyframe_ms": 21400,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/107.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 660,
+          "y2": 314,
+          "frame_index": 103,
+          "frame_ms": 20600,
+          "conf": 0.7620818018913269
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 700,
+          "y2": 335,
+          "frame_index": 104,
+          "frame_ms": 20800,
+          "conf": 0.7620818018913269
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 700,
+          "y2": 354,
+          "frame_index": 105,
+          "frame_ms": 21000,
+          "conf": 0.7620818018913269
+        },
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 687,
+          "y2": 368,
+          "frame_index": 106,
+          "frame_ms": 21200,
+          "conf": 0.7620818018913269
+        },
+        {
+          "x1": 0,
+          "y1": 5,
+          "x2": 678,
+          "y2": 381,
+          "frame_index": 107,
+          "frame_ms": 21400,
+          "conf": 0.7620818018913269
+        },
+        {
+          "x1": 0,
+          "y1": 22,
+          "x2": 671,
+          "y2": 390,
+          "frame_index": 108,
+          "frame_ms": 21600,
+          "conf": 0.7620818018913269
+        },
+        {
+          "x1": 0,
+          "y1": 36,
+          "x2": 662,
+          "y2": 402,
+          "frame_index": 109,
+          "frame_ms": 21800,
+          "conf": 0.7620818018913269
+        },
+        {
+          "x1": 0,
+          "y1": 50,
+          "x2": 659,
+          "y2": 411,
+          "frame_index": 110,
+          "frame_ms": 22000,
+          "conf": 0.7620818018913269
+        }
+      ]
+    },
+    {
+      "track_id": "overgrown-vegetation-0",
+      "phrase": "overgrown vegetation",
+      "object_id": 0,
+      "first_ms": 0,
+      "last_ms": 2200,
+      "n_frames": 12,
+      "mean_conf": 0.706,
+      "keyframe_index": 6,
+      "keyframe_ms": 1200,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/6.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 130,
+          "y1": 510,
+          "x2": 190,
+          "y2": 565,
+          "frame_index": 0,
+          "frame_ms": 0,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 128,
+          "y1": 523,
+          "x2": 189,
+          "y2": 581,
+          "frame_index": 1,
+          "frame_ms": 200,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 115,
+          "y1": 547,
+          "x2": 178,
+          "y2": 607,
+          "frame_index": 2,
+          "frame_ms": 400,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 95,
+          "y1": 595,
+          "x2": 161,
+          "y2": 660,
+          "frame_index": 3,
+          "frame_ms": 600,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 73,
+          "y1": 654,
+          "x2": 141,
+          "y2": 726,
+          "frame_index": 4,
+          "frame_ms": 800,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 45,
+          "y1": 709,
+          "x2": 117,
+          "y2": 789,
+          "frame_index": 5,
+          "frame_ms": 1000,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 19,
+          "y1": 778,
+          "x2": 95,
+          "y2": 868,
+          "frame_index": 6,
+          "frame_ms": 1200,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 860,
+          "x2": 78,
+          "y2": 966,
+          "frame_index": 7,
+          "frame_ms": 1400,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 942,
+          "x2": 66,
+          "y2": 1067,
+          "frame_index": 8,
+          "frame_ms": 1600,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 1017,
+          "x2": 53,
+          "y2": 1138,
+          "frame_index": 9,
+          "frame_ms": 1800,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 1120,
+          "x2": 33,
+          "y2": 1229,
+          "frame_index": 10,
+          "frame_ms": 2000,
+          "conf": 0.7064220309257507
+        },
+        {
+          "x1": 0,
+          "y1": 1253,
+          "x2": 9,
+          "y2": 1279,
+          "frame_index": 11,
+          "frame_ms": 2200,
+          "conf": 0.7064220309257507
+        }
+      ]
+    },
+    {
+      "track_id": "overgrown-vegetation-1",
+      "phrase": "overgrown vegetation",
+      "object_id": 1,
+      "first_ms": 0,
+      "last_ms": 600,
+      "n_frames": 4,
+      "mean_conf": 0.714,
+      "keyframe_index": 1,
+      "keyframe_ms": 200,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/1.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 0,
+          "y1": 614,
+          "x2": 52,
+          "y2": 678,
+          "frame_index": 0,
+          "frame_ms": 0,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 0,
+          "y1": 630,
+          "x2": 49,
+          "y2": 698,
+          "frame_index": 1,
+          "frame_ms": 200,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 0,
+          "y1": 663,
+          "x2": 32,
+          "y2": 727,
+          "frame_index": 2,
+          "frame_ms": 400,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 0,
+          "y1": 751,
+          "x2": 11,
+          "y2": 777,
+          "frame_index": 3,
+          "frame_ms": 600,
+          "conf": 0.7142857313156128
+        }
+      ]
+    },
+    {
+      "track_id": "overgrown-vegetation-2",
+      "phrase": "overgrown vegetation",
+      "object_id": 2,
+      "first_ms": 200,
+      "last_ms": 1800,
+      "n_frames": 9,
+      "mean_conf": 0.704,
+      "keyframe_index": 6,
+      "keyframe_ms": 1200,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/6.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 552,
+          "y1": 588,
+          "x2": 627,
+          "y2": 646,
+          "frame_index": 1,
+          "frame_ms": 200,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 554,
+          "y1": 620,
+          "x2": 631,
+          "y2": 681,
+          "frame_index": 2,
+          "frame_ms": 400,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 553,
+          "y1": 676,
+          "x2": 634,
+          "y2": 743,
+          "frame_index": 3,
+          "frame_ms": 600,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 551,
+          "y1": 742,
+          "x2": 634,
+          "y2": 817,
+          "frame_index": 4,
+          "frame_ms": 800,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 551,
+          "y1": 804,
+          "x2": 639,
+          "y2": 886,
+          "frame_index": 5,
+          "frame_ms": 1000,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 563,
+          "y1": 874,
+          "x2": 662,
+          "y2": 969,
+          "frame_index": 6,
+          "frame_ms": 1200,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 609,
+          "y1": 997,
+          "x2": 698,
+          "y2": 1084,
+          "frame_index": 7,
+          "frame_ms": 1400,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 620,
+          "y1": 1089,
+          "x2": 719,
+          "y2": 1218,
+          "frame_index": 8,
+          "frame_ms": 1600,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 663,
+          "y1": 1201,
+          "x2": 719,
+          "y2": 1263,
+          "frame_index": 9,
+          "frame_ms": 1800,
+          "conf": 0.7037037014961243
+        }
+      ]
+    },
+    {
+      "track_id": "overgrown-vegetation-3",
+      "phrase": "overgrown vegetation",
+      "object_id": 3,
+      "first_ms": 200,
+      "last_ms": 1000,
+      "n_frames": 5,
+      "mean_conf": 0.714,
+      "keyframe_index": 1,
+      "keyframe_ms": 200,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/1.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 0,
+          "y1": 551,
+          "x2": 91,
+          "y2": 617,
+          "frame_index": 1,
+          "frame_ms": 200,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 0,
+          "y1": 576,
+          "x2": 74,
+          "y2": 646,
+          "frame_index": 2,
+          "frame_ms": 400,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 0,
+          "y1": 627,
+          "x2": 53,
+          "y2": 704,
+          "frame_index": 3,
+          "frame_ms": 600,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 0,
+          "y1": 691,
+          "x2": 30,
+          "y2": 777,
+          "frame_index": 4,
+          "frame_ms": 800,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 0,
+          "y1": 796,
+          "x2": 3,
+          "y2": 816,
+          "frame_index": 5,
+          "frame_ms": 1000,
+          "conf": 0.7142857313156128
+        }
+      ]
+    },
+    {
+      "track_id": "overgrown-vegetation-4",
+      "phrase": "overgrown vegetation",
+      "object_id": 4,
+      "first_ms": 8000,
+      "last_ms": 8400,
+      "n_frames": 3,
+      "mean_conf": 0.714,
+      "keyframe_index": 40,
+      "keyframe_ms": 8000,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/40.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 0,
+          "y1": 913,
+          "x2": 165,
+          "y2": 1164,
+          "frame_index": 40,
+          "frame_ms": 8000,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 0,
+          "y1": 914,
+          "x2": 92,
+          "y2": 1109,
+          "frame_index": 41,
+          "frame_ms": 8200,
+          "conf": 0.7142857313156128
+        },
+        {
+          "x1": 0,
+          "y1": 930,
+          "x2": 32,
+          "y2": 1050,
+          "frame_index": 42,
+          "frame_ms": 8400,
+          "conf": 0.7142857313156128
+        }
+      ]
+    },
+    {
+      "track_id": "overgrown-vegetation-5",
+      "phrase": "overgrown vegetation",
+      "object_id": 5,
+      "first_ms": 10000,
+      "last_ms": 14600,
+      "n_frames": 24,
+      "mean_conf": 0.704,
+      "keyframe_index": 58,
+      "keyframe_ms": 11600,
+      "keyframe_url": "/media/64c947d94556e94b8acf6c7cfeacc2fdda80ae42632657ab5e0eb06e407f7ae7/frames/58.jpg",
+      "mask_url": null,
+      "boxes": [
+        {
+          "x1": 0,
+          "y1": 0,
+          "x2": 155,
+          "y2": 79,
+          "frame_index": 50,
+          "frame_ms": 10000,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 29,
+          "y1": 0,
+          "x2": 236,
+          "y2": 90,
+          "frame_index": 51,
+          "frame_ms": 10200,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 105,
+          "y1": 11,
+          "x2": 313,
+          "y2": 114,
+          "frame_index": 52,
+          "frame_ms": 10400,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 179,
+          "y1": 42,
+          "x2": 388,
+          "y2": 141,
+          "frame_index": 53,
+          "frame_ms": 10600,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 246,
+          "y1": 72,
+          "x2": 456,
+          "y2": 170,
+          "frame_index": 54,
+          "frame_ms": 10800,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 273,
+          "y1": 77,
+          "x2": 486,
+          "y2": 178,
+          "frame_index": 55,
+          "frame_ms": 11000,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 271,
+          "y1": 58,
+          "x2": 491,
+          "y2": 162,
+          "frame_index": 56,
+          "frame_ms": 11200,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 267,
+          "y1": 32,
+          "x2": 494,
+          "y2": 142,
+          "frame_index": 57,
+          "frame_ms": 11400,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 265,
+          "y1": 13,
+          "x2": 499,
+          "y2": 126,
+          "frame_index": 58,
+          "frame_ms": 11600,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 266,
+          "y1": 0,
+          "x2": 506,
+          "y2": 109,
+          "frame_index": 59,
+          "frame_ms": 11800,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 288,
+          "y1": 0,
+          "x2": 535,
+          "y2": 86,
+          "frame_index": 60,
+          "frame_ms": 12000,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 326,
+          "y1": 0,
+          "x2": 579,
+          "y2": 82,
+          "frame_index": 61,
+          "frame_ms": 12200,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 366,
+          "y1": 0,
+          "x2": 626,
+          "y2": 83,
+          "frame_index": 62,
+          "frame_ms": 12400,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 395,
+          "y1": 0,
+          "x2": 663,
+          "y2": 78,
+          "frame_index": 63,
+          "frame_ms": 12600,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 423,
+          "y1": 0,
+          "x2": 702,
+          "y2": 79,
+          "frame_index": 64,
+          "frame_ms": 12800,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 470,
+          "y1": 0,
+          "x2": 719,
+          "y2": 84,
+          "frame_index": 65,
+          "frame_ms": 13000,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 527,
+          "y1": 0,
+          "x2": 719,
+          "y2": 87,
+          "frame_index": 66,
+          "frame_ms": 13200,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 581,
+          "y1": 0,
+          "x2": 719,
+          "y2": 94,
+          "frame_index": 67,
+          "frame_ms": 13400,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 606,
+          "y1": 0,
+          "x2": 719,
+          "y2": 86,
+          "frame_index": 68,
+          "frame_ms": 13600,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 601,
+          "y1": 0,
+          "x2": 719,
+          "y2": 100,
+          "frame_index": 69,
+          "frame_ms": 13800,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 589,
+          "y1": 0,
+          "x2": 719,
+          "y2": 105,
+          "frame_index": 70,
+          "frame_ms": 14000,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 574,
+          "y1": 0,
+          "x2": 719,
+          "y2": 123,
+          "frame_index": 71,
+          "frame_ms": 14200,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 590,
+          "y1": 0,
+          "x2": 719,
+          "y2": 128,
+          "frame_index": 72,
+          "frame_ms": 14400,
+          "conf": 0.7037037014961243
+        },
+        {
+          "x1": 657,
+          "y1": 27,
+          "x2": 719,
+          "y2": 126,
+          "frame_index": 73,
+          "frame_ms": 14600,
+          "conf": 0.7037037014961243
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "check_id": "surface_damage",
+      "status": "ran",
+      "n_findings": 3,
+      "note": null
+    },
+    {
+      "check_id": "sidewalk_obstruction",
+      "status": "ran",
+      "n_findings": 0,
+      "note": "Trash bin seen at 1 s is beside the sidewalk, not on it."
+    },
+    {
+      "check_id": "narrow_passage",
+      "status": "ran",
+      "n_findings": 0,
+      "note": null
+    },
+    {
+      "check_id": "missing_curb_ramp",
+      "status": "ran",
+      "n_findings": 0,
+      "note": "No street crossing on this stretch."
+    },
+    {
+      "check_id": "sidewalk_ends",
+      "status": "ran",
+      "n_findings": 0,
+      "note": null
+    },
+    {
+      "check_id": "steps_without_ramp",
+      "status": "not_applicable",
+      "n_findings": 0,
+      "note": "No entrance in this clip."
+    },
+    {
+      "check_id": "missing_handrail",
+      "status": "not_applicable",
+      "n_findings": 0,
+      "note": "No steps or ramp in this clip."
+    },
+    {
+      "check_id": "round_doorknob",
+      "status": "not_applicable",
+      "n_findings": 0,
+      "note": "No entrance in this clip."
+    }
+  ],
+  "location_tags": [],
+  "run": {
+    "agent_provider": "mock",
+    "agent_model": "mock (hand-written findings on real SAM tracks)",
+    "sam_model": "sam-3.1",
+    "n_model_calls": 4,
+    "cost_usd": 0.0,
+    "created_at": "2026-10-29T02:27:42+00:00"
+  },
+  "disclaimer": "Pre-trip screening from a phone video. Findings are likely barriers, not compliance determinations. Items marked 'verify manually' rest on depth, height or slope judged from video alone."
+}

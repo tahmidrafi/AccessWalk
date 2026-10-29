@@ -23,9 +23,9 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 - [ ] `d3-agents102` Watch Agents 102 workshop (part 2) (Setup, You)
 
 ## D4 · Thu 10/29
-- [ ] `d4-samall` Estimate cost, then SAM all phrases × 11 clips (Pipeline, A)
-- [ ] `d4-inventory` Inventory: dedupe tracks, best keyframe, face/plate blur (Pipeline, A)
-- [ ] `d4-schema` Freeze schemas.py, export JSON Schema + mock report.json (Pipeline, A)
+- [~] `d4-samall` Pick barrier phrases on 2 clips (prompt the barrier itself, e.g. "raised sidewalk slab", "cracked pavement", not only its cause), estimate cost, then SAM all phrases × 11 clips (Pipeline, A)
+- [~] `d4-inventory` Inventory: dedupe tracks, best keyframe, face/plate blur (Pipeline, A)
+- [x] `d4-schema` Freeze schemas.py, export JSON Schema + mock report.json (Pipeline, A)
 - [ ] `d4-annotate5` Annotation format + annotate 5 clips (Data, You)
 - [ ] `d4-fescaffold` Vite scaffold + report page on mock data (Frontend, B)
 
@@ -71,8 +71,8 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 
 ## Milestones
 - M1 Env, accounts, credits ready (D1) — done
-- M2 First real SAM tracks from a clip (D3)
-- M3 Report schema frozen; frontend unblocked (D4)
+- M2 First real SAM tracks from a clip (D3) — done
+- M3 Report schema frozen; frontend unblocked (D4) — done (Oct 28 evening)
 - M4 Agent produces cited findings end to end (D5)
 - M5 Geometry spike go/no-go (D6)
 - M6 Eval numbers vs raw-video baseline (D7)
