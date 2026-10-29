@@ -2,7 +2,9 @@
 
 Providers (keys in .env, see .env.example):
   baseten    Muse Spark Open, open weights (primary; the open-weight bonus is judged on it)
-  fireworks  the same open-weight model on a second host (automatic failover)
+  fireworks  the same open-weight model on a second host. Failover happens only on
+             errors the host may recover from (5xx, 429, timeouts); any other error,
+             including a 4xx, is our request's fault and raises at once.
   meta       Muse Spark 1.3, closed. OFF unless the caller passes allow_closed=True; a
              run that used it says so in its provenance. Eval and demo runs never set it.
 
@@ -20,6 +22,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+import openai
 from openai import OpenAI
 
 from . import usage
@@ -96,6 +99,18 @@ class ChatResult:
         return self.provider == CLOSED_PROVIDER
 
 
+class ProviderError(RuntimeError):
+    """A non-retryable error from a host (4xx, bad request, auth): no failover."""
+
+
+def is_retryable(e: Exception) -> bool:
+    """Fail over only on 5xx, 429 and timeouts."""
+    if isinstance(e, (openai.APITimeoutError, TimeoutError)):
+        return True
+    status = getattr(e, "status_code", None)
+    return status is not None and (status == 429 or status >= 500)
+
+
 def _call(provider: Provider, messages: list, tools: list | None, params: dict, client=None) -> dict:
     client = client or OpenAI(api_key=os.environ[provider.api_key_env], base_url=provider.base_url)
     kwargs = dict(model=provider.model, messages=messages, **params)
@@ -140,8 +155,11 @@ def chat(
         else:
             try:
                 data = call_fn(p, messages, tools, params)
-            except Exception as e:  # network, auth, 4xx/5xx: try the next host
-                errors.append(f"{name}: {type(e).__name__}: {str(e)[:200]}")
+            except Exception as e:
+                msg = f"{name}: {type(e).__name__}: {str(e)[:200]}"
+                if not is_retryable(e):
+                    raise ProviderError(msg + (" | earlier: " + " | ".join(errors) if errors else "")) from e
+                errors.append(msg)  # 5xx / 429 / timeout: try the next host
                 continue
             cost, hit = cost_usd(name, data["usage"]), False
             cpath.parent.mkdir(parents=True, exist_ok=True)
@@ -163,4 +181,4 @@ def chat(
             provider=name, model_served=data.get("model_served"), cache_hit=hit, cost_usd=cost,
             errors=errors,
         )
-    raise RuntimeError("all providers failed: " + " | ".join(errors))
+    raise ProviderError("all providers failed: " + " | ".join(errors))

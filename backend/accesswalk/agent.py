@@ -41,6 +41,9 @@ RUN_LOG = REPO_ROOT / "data" / "out" / "agent_runs.jsonl"
 MAX_TURNS = 20
 MAX_RECHECKS = 2
 MAX_VIEWS = 12
+# Baseten rejects a request carrying more than 8 images (400 "Too many images", Oct 29),
+# so only the latest MAX_IMAGES views travel as images; older ones stay as their captions.
+MAX_IMAGES = 8
 VIEW_WIDTH = 512  # ~1.1k input tokens per image (smoke test, Oct 29)
 SAMPLE_BOXES = 8
 PARAMS = {"temperature": 0, "max_tokens": 8000, "parallel_tool_calls": True}
@@ -64,7 +67,8 @@ TOOLS = [
         {"track_id": {"type": "string"}}, ["track_id"]),
     _fn("view_frame", "See one frame of the face- and plate-blurred video, with the boxes of up to 4 "
         f"tracks drawn and labelled. Use it to judge ramps, curb ramps, knob shapes and heights. At most "
-        f"{MAX_VIEWS} per clip.",
+        f"{MAX_VIEWS} per clip and {MAX_IMAGES} per turn; only your latest {MAX_IMAGES} frames stay "
+        "visible, older ones are replaced by their captions, so note what you saw before moving on.",
         {"frame_index": {"type": "integer"},
          "track_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 4}},
         ["frame_index"]),
@@ -283,6 +287,8 @@ def _frame_image(ctx: AgentContext, frame_index: int):
 def tool_view_frame(ctx: AgentContext, frame_index: int, track_ids: list | None = None) -> dict:
     if ctx.views >= MAX_VIEWS:
         return {"error": f"view limit ({MAX_VIEWS}) reached; cite from what you have"}
+    if len(ctx.pending_images) >= MAX_IMAGES:
+        return {"error": f"at most {MAX_IMAGES} frames per turn"}
     if not 0 <= frame_index < ctx.meta.sam.n_frames:
         return {"error": f"frame_index must be 0-{ctx.meta.sam.n_frames - 1}"}
     track_ids = list(track_ids or [])[:4]
@@ -381,6 +387,26 @@ def sam_recheck(ctx: AgentContext, phrase: str, start_ms: int, end_ms: int,
 # --------------------------------------------------------------------------- #
 # loop
 # --------------------------------------------------------------------------- #
+def window_images(messages: list[dict], keep: int = MAX_IMAGES) -> list[dict]:
+    """Copy of ``messages`` with only the latest ``keep`` images; older image parts
+    are replaced by a short text note (their captions are already in the message)."""
+    seen = 0
+    out: list[dict] = []
+    for m in reversed(messages):
+        content = m.get("content")
+        if isinstance(content, list) and any(p.get("type") == "image_url" for p in content):
+            parts = []
+            for part in reversed(content):
+                if part.get("type") == "image_url":
+                    seen += 1
+                    if seen > keep:
+                        part = {"type": "text", "text": "(older frame: image no longer attached)"}
+                parts.append(part)
+            m = {**m, "content": list(reversed(parts))}
+        out.append(m)
+    return list(reversed(out))
+
+
 def _clean(msg: dict) -> dict:
     """Assistant message as sent back to the API: role, content, tool_calls only."""
     out = {"role": "assistant", "content": msg.get("content") or ""}
@@ -427,7 +453,7 @@ def run_agent(ctx: AgentContext, *, allow_closed: bool = False, chat_fn=llm.chat
         if max_cost_usd is not None and cost + last_cost > max_cost_usd:
             budget_stop, turns = True, turns - 1
             break
-        res = chat_fn(messages, video_sha256=ctx.meta.video_sha256, tools=TOOLS, params=PARAMS,
+        res = chat_fn(window_images(messages), video_sha256=ctx.meta.video_sha256, tools=TOOLS, params=PARAMS,
                       allow_closed=allow_closed)
         providers.append(res.provider)
         served.append(res.model_served or "")

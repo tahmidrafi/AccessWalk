@@ -169,20 +169,76 @@ def test_chat_cache_key_covers_provider_and_tools(tmp_path):
 def test_failover_stays_open_weight_unless_flagged(tmp_path):
     kw = dict(video_sha256="abc", providers=_providers(), out_root=tmp_path, usage_log=tmp_path / "u.jsonl")
 
+    class Down(Exception):
+        status_code = 503
+
     def only(name):
         def fn(p, m, t, prm):
             if p.name != name:
-                raise ConnectionError(f"{p.name} down")
+                raise Down(f"{p.name} down")
             return _ok(p, m, t, prm)
         return fn
     msgs = [{"role": "user", "content": "y"}]
     r = llm.chat(msgs, call_fn=only("fireworks"), **kw)
     assert r.provider == "fireworks" and "baseten" in r.errors[0]
-    with pytest.raises(RuntimeError, match="all providers failed"):
+    with pytest.raises(llm.ProviderError, match="all providers failed"):
         llm.chat([{"role": "user", "content": "z"}], call_fn=only("meta"), **kw)
     r = llm.chat([{"role": "user", "content": "z"}], call_fn=only("meta"), allow_closed=True, **kw)
     assert r.used_closed_model
 
+
+@pytest.mark.parametrize("status, fails_over", [(500, True), (503, True), (429, True),
+                                                 (400, False), (401, False), (404, False)])
+def test_failover_only_on_5xx_429_timeout(tmp_path, status, fails_over):
+    kw = dict(video_sha256="abc", providers=_providers(), out_root=tmp_path, usage_log=tmp_path / "u.jsonl")
+
+    class HostError(Exception):
+        status_code = status
+
+    def fn(p, m, t, prm):
+        if p.name == "baseten":
+            raise HostError("Too many images" if status == 400 else "err")
+        return _ok(p, m, t, prm)
+    msgs = [{"role": "user", "content": f"s{status}"}]
+    if fails_over:
+        assert llm.chat(msgs, call_fn=fn, **kw).provider == "fireworks"
+    else:
+        with pytest.raises(llm.ProviderError, match="baseten"):
+            llm.chat(msgs, call_fn=fn, **kw)
+
+
+def test_timeout_fails_over(tmp_path):
+    kw = dict(video_sha256="abc", providers=_providers(), out_root=tmp_path, usage_log=tmp_path / "u.jsonl")
+
+    def fn(p, m, t, prm):
+        if p.name == "baseten":
+            raise TimeoutError("read timed out")
+        return _ok(p, m, t, prm)
+    assert llm.chat([{"role": "user", "content": "t"}], call_fn=fn, **kw).provider == "fireworks"
+
+
+def test_at_most_8_images_per_request(tmp_path):
+    ctx = _ctx()
+    ctx.frame_loader = lambda c, i: np.zeros((1280, 720, 3), dtype=np.uint8)
+    views = [{"role": "assistant", "content": "", "tool_calls": [
+        _call(10 * t + k, "view_frame", frame_index=t * 3 + k) for k in range(3)]} for t in range(4)]
+    chat = FakeChat(views + [{"role": "assistant", "content": "",
+                              "tool_calls": [_call(99, "finish", not_applicable=[], summary="s")]}])
+    agent.run_agent(ctx, chat_fn=chat, run_log=tmp_path / "r.jsonl", render=False)
+
+    def images(msgs):
+        return [p for m in msgs if isinstance(m["content"], list) for p in m["content"]
+                if p.get("type") == "image_url"]
+    assert [len(images(sent)) for sent, _ in chat.sent] == [0, 3, 6, 8, 8]  # 12 views, never > 8
+    last = chat.sent[-1][0]
+    captions = [p["text"] for m in last if isinstance(m["content"], list) for p in m["content"]
+                if p.get("type") == "text" and p["text"].startswith("frame ")]
+    assert len(captions) == 12  # every view keeps its caption
+    many = [_call(k, "view_frame", frame_index=k) for k in range(9)]
+    ctx2 = _ctx()
+    ctx2.frame_loader = ctx.frame_loader
+    outs = [agent.dispatch(ctx2, c["function"]["name"], c["function"]["arguments"]) for c in many]
+    assert "per turn" in outs[-1]["error"]
 
 def test_view_frame_sends_images_after_tool_results(tmp_path):
     ctx = _ctx()
@@ -210,6 +266,7 @@ def test_view_frame_cap():
     ctx.frame_loader = lambda c, i: np.zeros((1280, 720, 3), dtype=np.uint8)
     for _ in range(agent.MAX_VIEWS):
         assert agent.tool_view_frame(ctx, 1)["ok"]
+        ctx.pending_images = []  # the loop clears them after each turn
     assert "limit" in agent.tool_view_frame(ctx, 1)["error"]
 
 
