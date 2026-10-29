@@ -9,10 +9,11 @@ Per CLAUDE.md "Ingest specifics". For each raw clip we produce, under
   * ``meta.json`` source specs, frame-index<->ms map for sam.mp4, video hash
 
 Privacy, done locally, before anything leaves the machine:
-  * faces are detected on every (autorotated) source frame with OpenCV YuNet,
-    padded ~20%, Gaussian-blurred, and the boxes are held a few frames to cover
-    detector misses. Every derived video is encoded from the blurred frames, so
-    no unblurred face is ever written to a derived file or uploaded.
+  * faces are detected on every (autorotated) source frame with OpenCV YuNet
+    (pass 1), padded ~20%, held a few frames and bridged across detector gaps of
+    up to 1 s (``plan_blur_boxes``), then Gaussian-blurred (pass 2). Every
+    derived video is encoded from the blurred frames, so no unblurred face is
+    ever written to a derived file or uploaded.
   * all derived files are written with ``-map_metadata -1 -map_chapters -1`` and
     only the video+audio streams are mapped, so the Pixel GPS location tag and
     the extra Pixel data track are dropped.
@@ -35,8 +36,9 @@ import cv2
 import numpy as np
 from pydantic import BaseModel
 
-# Bumped whenever the ingest params/filters change; part of the cache key so that
-# frame indices (which depend on the re-encode) never silently go stale.
+# Bumped whenever a change alters frame timing or geometry (fps, size, trimming);
+# part of the SAM cache key so frame indices never silently go stale. Blur-only
+# changes don't move frames: re-ingest the affected clips with --force instead.
 INGEST_VERSION = 1
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -167,16 +169,21 @@ DETECT_LONG_SIDE = 960  # run YuNet on a frame no larger than this; scale boxes 
 
 
 def detections_to_boxes(
-    faces, inv: float, pad: float, w: int, h: int
+    faces, inv: float, pad: float, w: int, h: int, max_frac: float = 0.5
 ) -> list[tuple[int, int, int, int]]:
     """Map YuNet detections (Nx15 on the downscaled frame) to padded, clipped
-    full-resolution boxes. ``inv`` scales detection coords back to full res. Pure
+    full-resolution boxes. ``inv`` scales detection coords back to full res.
+    Detections wider than ``max_frac`` of the frame are dropped: at the low score
+    threshold YuNet sometimes boxes most of a sidewalk frame as a "face", and
+    blurring that (then bridging it across frames) would erase the evidence. Pure
     (no OpenCV state) so the scale-back + pad + clip logic can be unit-tested."""
     boxes: list[tuple[int, int, int, int]] = []
     if faces is None:
         return boxes
     for f in faces:
         fx, fy, fw, fh = (v * inv for v in f[:4])
+        if fw > max_frac * w:
+            continue
         px, py = fw * pad, fh * pad
         x1 = max(0, int(fx - px))
         y1 = max(0, int(fy - py))
@@ -187,74 +194,106 @@ def detections_to_boxes(
     return boxes
 
 
-def _blur_faces_stream(
-    raw: Path,
-    src: SourceMeta,
-    detector: cv2.FaceDetectorYN,
-    consumer_stdin,
-    pad: float,
-    hold: int,
-) -> tuple[int, int, int]:
-    """Decode autorotated BGR frames, blur faces, write blurred frames to
-    ``consumer_stdin``. Returns (frames_written, frames_with_detection, total_boxes).
+Box = tuple[int, int, int, int]
 
-    Detection runs on a downscaled copy (``DETECT_LONG_SIDE``) for speed; boxes
-    are scaled back to full resolution and padded, so blurring stays full-res.
-    """
-    w, h = src.display_width, src.display_height
-    frame_bytes = w * h * 3
-    det_scale = min(1.0, DETECT_LONG_SIDE / max(w, h))
-    dw = (round(w * det_scale)) & ~1
-    dh = (round(h * det_scale)) & ~1
-    detector.setInputSize((dw, dh))
-    inv = 1.0 / det_scale
 
+def _center_dist(a: Box, b: Box) -> float:
+    return (((a[0] + a[2]) - (b[0] + b[2])) ** 2 + ((a[1] + a[3]) - (b[1] + b[3])) ** 2) ** 0.5 / 2
+
+
+def plan_blur_boxes(
+    dets: dict[int, list[Box]], n_frames: int, hold: int, max_gap: int
+) -> dict[int, list[Box]]:
+    """Which boxes to blur on each frame, given per-frame face detections.
+
+    YuNet misses a small or turned face on many frames (on the Oct-27 campus clip
+    a passer-by was detected on 47 of ~140 frames, gaps up to 17 frames). So:
+      * every detection is held ``hold`` frames before and after;
+      * between two detections <= ``max_gap`` frames apart, each face is matched to
+        the nearest face in the earlier detection and the gap frames get the hull
+        of both boxes, which covers the path of a face moving between them.
+    Over-blurs rather than misses. Pure, so it is unit-tested."""
+    plan: dict[int, list[Box]] = {}
+    frames = sorted(t for t, b in dets.items() if b)
+    for t in frames:
+        for k in range(max(0, t - hold), min(n_frames, t + hold + 1)):
+            plan.setdefault(k, []).extend(dets[t])
+    for t0, t1 in zip(frames, frames[1:], strict=False):
+        if not 1 < t1 - t0 <= max_gap:
+            continue
+        for b1 in dets[t1]:
+            b0 = min(dets[t0], key=lambda b: _center_dist(b, b1))
+            size = max(b0[2] - b0[0], b0[3] - b0[1], b1[2] - b1[0], b1[3] - b1[1])
+            # a walking face can move a fraction of its size per frame, so allow more
+            # movement across longer gaps
+            if _center_dist(b0, b1) > size * (1 + 0.25 * (t1 - t0)):
+                continue  # a different face; the hold above still covers each one
+            hull = (min(b0[0], b1[0]), min(b0[1], b1[1]), max(b0[2], b1[2]), max(b0[3], b1[3]))
+            for k in range(t0 + 1, t1):
+                plan.setdefault(k, []).append(hull)
+    return plan
+
+
+def _decode(raw: Path, w: int, h: int):
+    """Yield autorotated BGR frames of ``raw`` scaled to ``w``x``h``."""
     producer = subprocess.Popen(
         [
             "ffmpeg", "-hide_banner", "-v", "error", "-i", str(raw),
-            "-f", "rawvideo", "-pix_fmt", "bgr24", "-",
+            "-vf", f"scale={w}:{h}", "-f", "rawvideo", "-pix_fmt", "bgr24", "-",
         ],
         stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
     )
-
-    held: list[list[int]] = []  # [x1, y1, x2, y2, ttl]
-    n_frames = 0
-    faces_frames = 0
-    faces_boxes = 0
+    frame_bytes = w * h * 3
     assert producer.stdout is not None
     try:
         while True:
             buf = producer.stdout.read(frame_bytes)
             if len(buf) < frame_bytes:
                 break
-            frame = np.frombuffer(buf, np.uint8).reshape(h, w, 3).copy()
-
-            small = cv2.resize(frame, (dw, dh)) if det_scale < 1.0 else frame
-            _, faces = detector.detect(small)
-            if faces is not None and len(faces):
-                faces_frames += 1
-                faces_boxes += len(faces)
-                for x1, y1, x2, y2 in detections_to_boxes(faces, inv, pad, w, h):
-                    held.append([x1, y1, x2, y2, hold])
-
-            # Blur every held box (current + recently held), then age them.
-            for box in held:
-                x1, y1, x2, y2, _ = box
-                roi = frame[y1:y2, x1:x2]
-                if roi.size:
-                    k = max(15, (min(x2 - x1, y2 - y1) // 2) | 1)
-                    frame[y1:y2, x1:x2] = cv2.GaussianBlur(roi, (k, k), 0)
-            held = [[*b[:4], b[4] - 1] for b in held if b[4] - 1 > 0]
-
-            consumer_stdin.write(frame.tobytes())
-            n_frames += 1
+            yield np.frombuffer(buf, np.uint8).reshape(h, w, 3).copy()
     finally:
         producer.stdout.close()
         producer.wait()
     # A decode failure would otherwise just look like a short clip.
     if producer.returncode != 0:
         raise RuntimeError(f"ffmpeg decode of {raw.name} failed (exit {producer.returncode})")
-    return n_frames, faces_frames, faces_boxes
+
+
+def _detect_faces(
+    raw: Path, src: SourceMeta, detector: cv2.FaceDetectorYN, pad: float
+) -> tuple[dict[int, list[Box]], int]:
+    """Pass 1: detect on a downscaled decode (``DETECT_LONG_SIDE``); boxes are
+    scaled back to full resolution and padded. Returns (detections, n_frames)."""
+    w, h = src.display_width, src.display_height
+    det_scale = min(1.0, DETECT_LONG_SIDE / max(w, h))
+    dw = (round(w * det_scale)) & ~1
+    dh = (round(h * det_scale)) & ~1
+    detector.setInputSize((dw, dh))
+    dets: dict[int, list[Box]] = {}
+    n = 0
+    for n, small in enumerate(_decode(raw, dw, dh), start=1):
+        _, faces = detector.detect(small)
+        if faces is not None and len(faces):
+            dets[n - 1] = detections_to_boxes(faces, w / dw, pad, w, h)
+    return dets, n
+
+
+def _blur_faces_stream(
+    raw: Path, src: SourceMeta, plan: dict[int, list[Box]], consumer_stdin
+) -> int:
+    """Pass 2: decode full-res frames, blur the planned boxes, write to
+    ``consumer_stdin``. Returns frames written."""
+    w, h = src.display_width, src.display_height
+    n_frames = 0
+    for i, frame in enumerate(_decode(raw, w, h)):
+        for x1, y1, x2, y2 in plan.get(i, []):
+            roi = frame[y1:y2, x1:x2]
+            if roi.size:
+                k = max(15, (min(x2 - x1, y2 - y1) // 2) | 1)
+                frame[y1:y2, x1:x2] = cv2.GaussianBlur(roi, (k, k), 0)
+        consumer_stdin.write(frame.tobytes())
+        n_frames += 1
+    return n_frames
 
 
 # --------------------------------------------------------------------------- #
@@ -267,10 +306,13 @@ def _encode_from_blurred(
     detector: cv2.FaceDetectorYN,
     pad: float,
     hold: int,
+    max_gap: int,
     stderr_log: Path,
 ) -> tuple[int, int, int]:
     """Single ffmpeg consumer: blurred BGR frames on stdin -> proxy.mp4 + sam.mp4.
     Audio is pulled from the raw file (input 1). Returns (proxy frames, face counts...)."""
+    dets, n_src = _detect_faces(raw, src, detector, pad)
+    plan = plan_blur_boxes(dets, n_src, hold, max_gap)
     w, h = src.display_width, src.display_height
     sw, sh = _scaled_dims(w, h, SHORT_SIDE)
     proxy_out = out_dir / "proxy.mp4"
@@ -303,7 +345,7 @@ def _encode_from_blurred(
         consumer = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=errf)
         assert consumer.stdin is not None
         try:
-            counts = _blur_faces_stream(raw, src, detector, consumer.stdin, pad, hold)
+            n_written = _blur_faces_stream(raw, src, plan, consumer.stdin)
         finally:
             consumer.stdin.close()
             ret = consumer.wait()
@@ -312,7 +354,7 @@ def _encode_from_blurred(
             f"ffmpeg encode failed (exit {ret}); see {stderr_log}:\n"
             + stderr_log.read_text(errors="replace")[-2000:]
         )
-    return counts
+    return n_written, sum(1 for b in dets.values() if b), sum(len(b) for b in dets.values())
 
 
 def _extract_audio(raw: Path, out_dir: Path, has_audio: bool) -> None:
@@ -365,6 +407,7 @@ def ingest(
     model_path: str | Path = DEFAULT_MODEL,
     pad: float = 0.2,
     hold: int = 4,
+    max_gap: int = 30,
     force: bool = False,
 ) -> IngestMeta:
     raw = Path(raw_path).resolve()
@@ -391,13 +434,14 @@ def ingest(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     src = probe_source(raw)
-    # Over-blur rather than miss a face: lower score threshold than the default 0.9.
+    # Over-blur rather than miss a face: far below the default 0.9. At 0.6 a passer-by on
+    # the Oct-27 campus clip scored 0.60-0.76 and dropped out for up to 19 frames.
     detector = cv2.FaceDetectorYN.create(
         str(model), "", (src.display_width, src.display_height),
-        score_threshold=0.6, nms_threshold=0.3, top_k=5000,
+        score_threshold=0.5, nms_threshold=0.3, top_k=5000,
     )
     proxy_frames, faces_frames, faces_boxes = _encode_from_blurred(
-        raw, src, out_dir, detector, pad, hold, out_dir / "ffmpeg.stderr.log"
+        raw, src, out_dir, detector, pad, hold, max_gap, out_dir / "ffmpeg.stderr.log"
     )
     _extract_audio(raw, out_dir, src.has_audio)
 

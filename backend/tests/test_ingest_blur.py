@@ -5,7 +5,7 @@ box must be scaled back to full resolution, padded, and clipped before blurring.
 The test clip had zero faces, so this logic is otherwise unexercised -- and a bug
 here would leak faces in the public d4 clips."""
 import numpy as np
-from accesswalk.ingest import detections_to_boxes
+from accesswalk.ingest import detections_to_boxes, plan_blur_boxes
 
 
 def _faces(*rows) -> np.ndarray:
@@ -40,3 +40,31 @@ def test_none_and_degenerate():
     assert detections_to_boxes(None, inv=1.0, pad=0.2, w=100, h=100) == []
     # zero-area detection produces no box
     assert detections_to_boxes(_faces((50, 50, 0, 0)), inv=1.0, pad=0.0, w=100, h=100) == []
+
+
+def test_plan_holds_each_detection():
+    plan = plan_blur_boxes({10: [(0, 0, 10, 10)]}, n_frames=100, hold=4, max_gap=30)
+    assert sorted(plan) == list(range(6, 15))
+
+
+def test_plan_bridges_gap_with_hull():
+    # same face drifting right, detected at 0 and 17 only (the campus-clip pattern)
+    a, b = (100, 100, 130, 130), (160, 110, 190, 140)
+    plan = plan_blur_boxes({0: [a], 17: [b]}, n_frames=100, hold=4, max_gap=30)
+    assert all(k in plan for k in range(0, 22))  # no unblurred frame in between
+    assert (100, 100, 190, 140) in plan[9]
+
+
+def test_plan_no_bridge_past_max_gap_or_between_far_faces():
+    a = (0, 0, 10, 10)
+    plan = plan_blur_boxes({0: [a], 50: [a]}, n_frames=100, hold=4, max_gap=30)
+    assert 25 not in plan
+    far = (900, 900, 910, 910)
+    plan = plan_blur_boxes({0: [a], 10: [far]}, n_frames=100, hold=2, max_gap=30)
+    assert 5 not in plan
+
+
+def test_frame_sized_false_positive_dropped():
+    # the clip-1 false positive: ~800x1200 "face" on a 1080-wide frame
+    faces = _faces((20, 500, 800, 1200), (500, 300, 60, 70))
+    assert detections_to_boxes(faces, inv=1.0, pad=0.0, w=1080, h=1920) == [(500, 300, 560, 370)]
