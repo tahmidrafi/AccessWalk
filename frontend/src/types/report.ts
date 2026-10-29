@@ -88,6 +88,7 @@ export type SamModel = string;
 export type NModelCalls = number;
 export type CostUsd = number;
 export type CreatedAt = string;
+export type UsedClosedFallback = boolean;
 export type Disclaimer = string;
 
 export interface Report {
@@ -244,5 +245,6 @@ export interface RunInfo {
   n_model_calls?: NModelCalls;
   cost_usd?: CostUsd;
   created_at: CreatedAt;
+  used_closed_fallback?: UsedClosedFallback;
   [k: string]: unknown;
 }
