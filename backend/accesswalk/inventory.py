@@ -28,10 +28,9 @@ import cv2
 from pydantic import BaseModel
 
 from .ingest import DEFAULT_OUT_ROOT, IngestMeta
+from .phrases import PLATE_PHRASE
 from .sam_parse import SamRecord, to_tracks
 from .schemas import BBox, Track, TrackBox
-
-PLATE_PHRASE = "license plate"
 
 
 def phrase_slug(phrase: str) -> str:
