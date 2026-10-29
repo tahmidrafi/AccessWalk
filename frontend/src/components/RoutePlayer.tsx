@@ -1,7 +1,8 @@
 import type { CSSProperties, RefObject } from 'react'
 import { SEVERITY_LABELS } from '../lib/labels'
-import { adjacentFinding, boxAt, findingAnchor, findingsVtt } from '../lib/report'
+import { adjacentFinding, findingAnchor, findingsVtt, overlayShapes } from '../lib/report'
 import { formatClock } from '../lib/time'
+import { useVideoClock } from '../lib/useVideoClock'
 import type { Finding, Track, VideoInfo } from '../types/report'
 import { Box, Mask, Tag } from './Overlay'
 
@@ -24,9 +25,40 @@ function captionLabel(f: Finding): string {
 }
 
 /**
+ * Shapes over the video. Has its own clock at the video's frame rate, so boxes
+ * glide between SAM frames without re-rendering the rest of the page.
+ */
+function PlayerOverlay({
+  video,
+  findings,
+  tracks,
+  numberOf,
+  videoRef,
+  frameMs,
+}: Pick<Props, 'video' | 'findings' | 'tracks' | 'numberOf' | 'videoRef' | 'frameMs'>) {
+  const ms = useVideoClock(videoRef)
+  const shapes = overlayShapes(findings, tracks, numberOf, ms, frameMs)
+  return (
+    <svg viewBox={`0 0 ${video.width} ${video.height}`} aria-hidden="true" focusable="false">
+      {shapes.map(({ finding, bbox, mask }) =>
+        mask ? (
+          <Mask key={finding.finding_id} url={mask} width={video.width} height={video.height} />
+        ) : (
+          <Box key={finding.finding_id} b={bbox} kind="cited" />
+        ),
+      )}
+      {shapes.map(({ finding, bbox, n }) => (
+        <Tag key={finding.finding_id} b={bbox} n={n} />
+      ))}
+    </svg>
+  )
+}
+
+/**
  * The walkthrough video (proxy.mp4, faces blurred) with the objects behind the
  * findings drawn on top while they are on screen: the SAM mask on the track's
- * keyframe when the report has one, the tracked box otherwise.
+ * keyframe when the report has one, the tracked box otherwise, interpolated
+ * between consecutive SAM frames.
  */
 export function RoutePlayer({
   video,
@@ -45,15 +77,6 @@ export function RoutePlayer({
   const prev = adjacentFinding(findings, nowMs, -1)
   const next = adjacentFinding(findings, nowMs, 1)
 
-  const shapes = inView.flatMap((f) => {
-    const t = tracks.get(f.track_id)
-    const b = t ? boxAt(t, nowMs, frameMs) : undefined
-    if (!t || !b) return []
-    const n = numberOf.get(f.finding_id) ?? 0
-    const mask = t.mask_url && b.frame_index === t.keyframe_index ? t.mask_url : null
-    return [{ f, b, n, mask }]
-  })
-
   return (
     <div className="player" style={{ '--ar': video.width / video.height } as CSSProperties}>
       <div className="player-video" style={{ aspectRatio: `${video.width} / ${video.height}` }}>
@@ -69,18 +92,14 @@ export function RoutePlayer({
         >
           <track kind="captions" srcLang="en" label="Findings" src={`data:text/vtt;charset=utf-8,${encodeURIComponent(vtt)}`} />
         </video>
-        <svg viewBox={`0 0 ${video.width} ${video.height}`} aria-hidden="true" focusable="false">
-          {shapes.map(({ f, b, mask }) =>
-            mask ? (
-              <Mask key={f.finding_id} url={mask} width={video.width} height={video.height} />
-            ) : (
-              <Box key={f.finding_id} b={b} kind="cited" />
-            ),
-          )}
-          {shapes.map(({ f, b, n }) => (
-            <Tag key={f.finding_id} b={b} n={n} />
-          ))}
-        </svg>
+        <PlayerOverlay
+          video={video}
+          findings={findings}
+          tracks={tracks}
+          numberOf={numberOf}
+          videoRef={videoRef}
+          frameMs={frameMs}
+        />
       </div>
 
       <div className="player-side">
