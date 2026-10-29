@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { boxOnFrame } from '../lib/report'
 import { formatClock, formatSeconds } from '../lib/time'
-import type { BBox, Finding, Track, VideoInfo } from '../types/report'
+import type { Finding, Track, VideoInfo } from '../types/report'
+import { Box, Mask } from './Overlay'
 
 interface Props {
   finding: Finding
@@ -10,21 +11,11 @@ interface Props {
   related: Track[]
 }
 
-function Box({ b, kind }: { b: BBox; kind: 'cited' | 'related' }) {
-  const props = { x: b.x1, y: b.y1, width: b.x2 - b.x1, height: b.y2 - b.y1 }
-  // Two strokes (dark under light) so the box reads on any background.
-  return (
-    <g className={`box box-${kind}`}>
-      <rect {...props} className="box-under" />
-      <rect {...props} className="box-over" />
-    </g>
-  )
-}
-
 /**
  * The cited frame (sam.mp4 pixels, faces and plates already blurred by the
- * pipeline) with the finding's box drawn on top. Related tracks that are on the
- * same frame get a dashed box.
+ * pipeline) with the finding's object drawn on top: its SAM mask when the
+ * report has one for this frame (masks are rendered for the track's keyframe),
+ * else its box. Related tracks that are on the same frame get a dashed box.
  */
 export function EvidenceFrame({ finding, video, track, related }: Props) {
   const [failed, setFailed] = useState(!finding.frame_url)
@@ -33,6 +24,7 @@ export function EvidenceFrame({ finding, video, track, related }: Props) {
     .map((t) => ({ t, b: boxOnFrame(t, finding.frame_index) }))
     .filter((r): r is { t: Track; b: NonNullable<typeof r.b> } => r.b !== undefined)
   const relatedElsewhere = related.filter((t) => !relatedHere.some((r) => r.t === t))
+  const maskUrl = track?.mask_url && track.keyframe_index === finding.frame_index ? track.mask_url : null
   const alt = `Video frame at ${formatClock(finding.frame_ms)} with the ${phrase} outlined. Faces and license plates are blurred.`
 
   return (
@@ -49,11 +41,16 @@ export function EvidenceFrame({ finding, video, track, related }: Props) {
           {relatedHere.map(({ t, b }) => (
             <Box key={t.track_id} b={b} kind="related" />
           ))}
-          <Box b={finding.bbox} kind="cited" />
+          {maskUrl ? (
+            <Mask url={maskUrl} width={video.width} height={video.height} />
+          ) : (
+            <Box b={finding.bbox} kind="cited" />
+          )}
         </svg>
       </div>
       <figcaption>
-        Frame {finding.frame_index} at {formatSeconds(finding.frame_ms)}. Solid box: {phrase}
+        Frame {finding.frame_index} at {formatSeconds(finding.frame_ms)}. {maskUrl ? 'Outlined and tinted' : 'Solid box'}:{' '}
+        {phrase}
         {track && <> (track {track.track_id})</>}.
         {relatedHere.length > 0 && <> Dashed: {relatedHere.map(({ t }) => t.phrase).join(', ')}.</>}
         {relatedElsewhere.map((t) => (
