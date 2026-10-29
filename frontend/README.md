@@ -50,7 +50,18 @@ cited frame; the playhead, "In view now" panel (a polite live region) and
 in-view rings follow playback. A captions track (CC) generated from the findings
 names each one while it is on screen.
 
-## Accessibility
+## PDF export
+
+"Download PDF" opens the browser's print dialog ("Save as PDF"); the default file
+name is the report title and date. The print stylesheet keeps the verdict,
+disclaimer, findings with their cited frames and boxes, the checks table and the
+provenance, and leaves out the video player, timeline and controls. Chrome/Edge
+write a tagged PDF: headings become the outline ("Route verdict: ...",
+"Finding 1: ..."), frames are figures with their alt text, and the checks table
+keeps its header cells. Checked with headless Chrome `--print-to-pdf` (4 pages
+for the mock).
+
+
 
 Landmarks and a skip link; one `h1`, an `h2` per section, an `h3` per finding.
 Severity and "verify manually" are text + shape, never colour alone. Timeline

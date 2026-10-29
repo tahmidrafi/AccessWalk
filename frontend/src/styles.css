@@ -768,3 +768,149 @@ main {
     stroke: Highlight;
   }
 }
+
+/* PDF export */
+
+.pdf-export {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  margin-top: 0.75rem;
+}
+.pdf-export p {
+  margin: 0;
+  max-width: 36rem;
+  font-size: 0.875rem;
+}
+
+/* Print / "Save as PDF": the report as a document. The video player, timeline and
+   controls are left out; findings keep their cited frame with the box drawn. */
+@media print {
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --text: #000000;
+    --muted: #333333;
+    --border: #6b6b6b;
+    --rule: #bdbdbd;
+    --link: #000000;
+
+    --high: #a50e0e;
+    --high-bg: #fde8e8;
+    --medium: #7a4100;
+    --medium-bg: #fff1dc;
+    --low: #2b4a6f;
+    --low-bg: #e7eef7;
+    --verify: #4a2380;
+    --verify-bg: #f1eafb;
+    --ok: #1d6b2f;
+    --ok-bg: #e5f4e8;
+    font-size: 11pt;
+  }
+
+  @page {
+    margin: 14mm 14mm 16mm;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  /* PDF text and tags ignore aria-hidden and drop clipped text: swap the
+     decorative number/icon for the screen-reader labels, so headings read
+     "Finding 1: ..." and "Route verdict: ..." on paper and in the PDF outline. */
+  .verdict-icon,
+  .finding-number {
+    display: none;
+  }
+  .verdict-rating,
+  .finding-header h3 {
+    display: block;
+  }
+  .visually-hidden {
+    position: static !important;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  body,
+  main,
+  .site-header {
+    background: #ffffff;
+  }
+  .site-header,
+  main {
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  main {
+    padding-bottom: 0;
+  }
+  main > section,
+  main > aside {
+    margin-top: 1.25rem;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Severity colours, frame boxes and tints carry meaning: print them as shown. */
+  .verdict,
+  .verdict-icon,
+  .badge,
+  .finding,
+  .finding-number,
+  .finding-verify-note,
+  .evidence-frame,
+  .evidence-missing {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+  .verdict,
+  .disclaimer,
+  .finding,
+  .checks tr,
+  .run-facts > div {
+    break-inside: avoid;
+  }
+
+  /* Interaction states mean nothing on paper. */
+  .finding-selected,
+  .finding-inview {
+    box-shadow: none;
+    outline: none;
+  }
+
+  /* Text beside the frame, whatever the paper width. */
+  .finding {
+    grid-template-columns: minmax(0, 1fr) 14rem;
+    padding: 0.75rem 1rem;
+    border-width: 1px 1px 1px 0.4rem;
+  }
+  .evidence {
+    max-width: 14rem;
+  }
+  .findings {
+    gap: 0.9rem;
+  }
+
+  .checks th,
+  .checks td {
+    padding: 0.35rem 0.5rem;
+  }
+}

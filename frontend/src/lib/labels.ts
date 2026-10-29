@@ -1,4 +1,4 @@
-import type { CheckSummary, Finding, RouteVerdict } from '../types/report'
+import type { CheckSummary, Finding, Report, RouteVerdict } from '../types/report'
 
 export const CHECK_LABELS: Record<Finding['check_id'], string> = {
   sidewalk_obstruction: 'Sidewalk obstruction',
@@ -35,4 +35,10 @@ export function checkResult(c: CheckSummary): string {
     case 'dropped':
       return 'Not reported (check not reliable enough yet)'
   }
+}
+
+/** Default file name for "Save as PDF": the document title at print time. */
+export function pdfTitle(report: Report): string {
+  const day = report.run.created_at.slice(0, 10)
+  return `AccessWalk report - ${report.title}${day ? ` (${day})` : ''}`
 }

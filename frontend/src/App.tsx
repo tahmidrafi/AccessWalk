@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChecksTable } from './components/ChecksTable'
 import { FindingCard } from './components/FindingCard'
+import { PdfButton } from './components/PdfButton'
 import { RoutePlayer } from './components/RoutePlayer'
 import { RunDetails } from './components/RunDetails'
 import { Timeline } from './components/Timeline'
@@ -84,7 +85,7 @@ export default function App() {
 
   return (
     <>
-      <a className="skip-link" href="#findings-heading">
+      <a className="skip-link no-print" href="#findings-heading">
         Skip to findings
       </a>
       <header className="site-header">
@@ -98,6 +99,7 @@ export default function App() {
             {formatClock(report.video.duration_ms)} walkthrough clip
             {report.run.agent_provider === 'mock' && <> · sample report with hand-written findings</>}
           </p>
+          <PdfButton report={report} />
         </div>
 
         <Verdict report={report} findings={findings} numberOf={numberOf} onGo={goTo} />
@@ -108,7 +110,8 @@ export default function App() {
           </aside>
         )}
 
-        <section aria-labelledby="route-heading">
+        {/* Interactive only (video, seek links): left out of the PDF. */}
+        <section aria-labelledby="route-heading" className="no-print">
           <h2 id="route-heading">Along the route</h2>
           {videoOk ? (
             <>

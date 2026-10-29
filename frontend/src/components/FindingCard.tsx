@@ -45,7 +45,7 @@ export function FindingCard({ finding: f, number, video, track, related, selecte
               </li>
             )}
             {inView && (
-              <li className="badge badge-inview">
+              <li className="badge badge-inview no-print">
                 <span aria-hidden="true">● </span>In view in the video
               </li>
             )}
@@ -71,7 +71,7 @@ export function FindingCard({ finding: f, number, video, track, related, selecte
         </dl>
 
         {onShowInVideo && (
-          <button type="button" className="finding-seek" onClick={onShowInVideo}>
+          <button type="button" className="finding-seek no-print" onClick={onShowInVideo}>
             <span aria-hidden="true">▶ </span>Show in video at {formatClock(f.frame_ms)}
           </button>
         )}

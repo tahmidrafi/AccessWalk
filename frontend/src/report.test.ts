@@ -1,6 +1,6 @@
 import Ajv from 'ajv'
 import { describe, expect, it } from 'vitest'
-import { checkResult } from './lib/labels'
+import { checkResult, pdfTitle } from './lib/labels'
 import { boxOnFrame, findingsInRouteOrder, loadReport, timelineRows, trackById } from './lib/report'
 import { formatClock, formatSeconds, spokenTime } from './lib/time'
 import schema from './schema/report.schema.json'
@@ -47,6 +47,10 @@ describe('helpers', () => {
     expect(rows.get('d')).toBe(1)
     expect(rows.get('b')).toBe(2)
     expect(rows.get('c')).toBe(0)
+  })
+
+  it('names the PDF after the report and its date', () => {
+    expect(pdfTitle(report)).toBe(`AccessWalk report - ${report.title} (${report.run.created_at.slice(0, 10)})`)
   })
 
   it('describes check outcomes in words', () => {
