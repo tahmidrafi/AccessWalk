@@ -18,7 +18,7 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 - [x] `d3-git` git init, first commit, public GitHub repo (Setup, A)
 - [x] `d3-ingest` Ingest: local face blur, then sam.mp4 (5 fps), proxy.mp4 (H.264), audio.wav, meta.json; GPS stripped (Pipeline, A)
 - [x] `d3-samclient` SAM 3.1 client + Python output parser + tests (Pipeline, A)
-- [ ] `d3-samfirst` First SAM run: 1 clip × 3 phrases, confirm cost (Pipeline, A)
+- [x] `d3-samfirst` First SAM run: 1 clip × 3 phrases, confirm cost (Pipeline, A)
 - [x] `d3-usage` Cache by video hash + usage logging to usage.jsonl (Pipeline, A)
 - [ ] `d3-agents102` Watch Agents 102 workshop (part 2) (Setup, You)
 
@@ -81,3 +81,4 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 
 ## Log
 - 2026-10-28: plan set up; 11 clips filmed (silent, no narration); CLAUDE.md v2; Fireworks model ID set in .env.
+- 2026-10-28 (Session A): M2 reached. git init + public repo pushed (owner, SSH alias); ingest.py (local YuNet face blur, GPS/metadata strip, sam.mp4/proxy.mp4/audio.wav/meta.json) verified on PXL_20261027_211833467 (1080x1920->720x1280, 111 frames, GPS stripped, 0 faces); SAM client + grammar parser + cache (by video hash) + usage.jsonl logging, 21 tests passing, ruff clean; first SAM run (tree root=19 recs/2 tracks, trash bin=8/1, handrail=0, $0.0666, frame-alignment confirmed vfp==111, re-run free via cache). Blocked: none. Note: local main 1 commit ahead of origin (owner pushes). Next: d4 (SAM all phrases x 11 clips, inventory, freeze schemas.py).
