@@ -206,6 +206,7 @@ def tool_get_track(ctx: AgentContext, track_id: str) -> dict:
     for r in ctx.records.get("sidewalk", []):
         walks.setdefault(r.frame_index, []).append(r)
     rows, note = [], None
+    mcache = DEFAULT_OUT_ROOT / ctx.meta.video_sha256 / "masks"  # decoded rasters, reused across calls
     for b in sorted(sample, key=lambda b: b.frame_index):
         row = {"frame_index": b.frame_index, "ms": b.frame_ms, "box": [b.x1, b.y1, b.x2, b.y2],
                "conf": b.conf}
@@ -213,9 +214,9 @@ def tool_get_track(ctx: AgentContext, track_id: str) -> dict:
             rec = recs.get(b.frame_index)
             try:
                 if rec is not None and rec.mask is not None:
-                    side = [(w, masks.decode_raster(w.mask))
+                    side = [(w, masks.decode_raster(w.mask, mcache))
                             for w in walks.get(b.frame_index, []) if w.mask]
-                    obj = (rec, masks.decode_raster(rec.mask))
+                    obj = (rec, masks.decode_raster(rec.mask, mcache))
                     row["on_sidewalk"] = masks.on_sidewalk_fraction(obj, side)
             except RuntimeError as e:  # decoder missing: say so instead of guessing from boxes
                 note = str(e)

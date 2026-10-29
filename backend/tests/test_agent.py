@@ -112,7 +112,7 @@ def test_get_track_reports_missing_decoder_instead_of_guessing(monkeypatch):
     ctx.records["trash bin"] = [r.model_copy(update={"mask": masks.MaskToken(
         height=301, width=101, encoding="one_bit", data="x")}) for r in ctx.records["trash bin"]]
 
-    def boom(_m):
+    def boom(_m, _cache=None):
         raise RuntimeError("mask decoding needs Meta's parser")
     monkeypatch.setattr(masks, "decode_raster", boom)
     out = agent.tool_get_track(ctx, "trash-bin-0")

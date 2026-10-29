@@ -14,6 +14,9 @@ pixels below the contact point, since the contact sits on the object/ground edge
 """
 from __future__ import annotations
 
+import hashlib
+from pathlib import Path
+
 import numpy as np
 
 from .sam_parse import MaskToken, SamRecord
@@ -22,18 +25,37 @@ _MARKER = {"lossless": "~", "one_bit": "!"}
 CONTACT_SLACK_PX = 4
 
 
-def decode_raster(mask: MaskToken) -> np.ndarray:
-    """(H, W) uint8 raster of 0/1 for one mask token."""
+def decode_raster(mask: MaskToken, cache_dir: Path | None = None) -> np.ndarray:
+    """(H, W) uint8 raster of 0/1 for one mask token. Decoding is slow for large
+    masks (a 1024x574 sidewalk mask takes ~5 s), so with ``cache_dir`` each decoded
+    raster is kept as a bit-packed .npy keyed by the payload hash."""
+    key = hashlib.sha1(f"{mask.encoding}{mask.width}x{mask.height}{mask.data}".encode()).hexdigest()[:20]
+    path = Path(cache_dir) / f"{key}.npy" if cache_dir else None
+    if path is not None and path.exists():
+        bits = np.load(path)
+        return np.unpackbits(bits)[: mask.height * mask.width].reshape(mask.height, mask.width)
+    raster = _decode(mask)
+    if path is not None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        np.save(path, np.packbits(raster))
+    return raster
+
+
+def _decode(mask: MaskToken) -> np.ndarray:
     try:
-        from meta_sam_parser import decode_mask_to_raster
+        from meta_sam_parser import SegmentationMask, decode_mask_to_raster
     except ImportError as e:
         raise RuntimeError(
             "mask decoding needs Meta's parser: pip install meta-sam-parser==0.1.0 "
             "(listed in environment.yml)"
         ) from e
-    payload = _MARKER.get(mask.encoding, "") + mask.data
-    flat = decode_mask_to_raster(payload, mask.width, mask.height)
-    return np.frombuffer(bytes(flat), dtype=np.uint8).reshape(mask.height, mask.width)
+    # The decoder wants the payload exactly as SAM sent it, marker included
+    # (sam_parse stores the marker separately as ``encoding``).
+    payload = _MARKER[mask.encoding] + mask.data
+    flat = decode_mask_to_raster(
+        SegmentationMask(encoding=mask.encoding, payload=payload, width=mask.width, height=mask.height)
+    )
+    return np.frombuffer(flat, dtype=np.uint8).reshape(mask.height, mask.width)
 
 
 def ground_contacts(rec: SamRecord, raster: np.ndarray) -> list[tuple[int, int]]:
