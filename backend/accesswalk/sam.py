@@ -61,12 +61,13 @@ def segment_phrase(
     file_id: str,
     phrase: str,
     mask_encoding: str = "one_bit",
-) -> tuple[str, dict]:
+) -> tuple[str, dict, str | None]:
     """Segment one noun ``phrase`` against an uploaded video.
 
-    Returns ``(output_text, usage)`` where ``output_text`` is the accumulated
-    special-token text (parse it with ``sam_parse.parse_output``) and ``usage`` is
-    the response usage dict (includes ``video_frames_processed``). Streaming is the
+    Returns ``(output_text, usage, model_served)`` where ``output_text`` is the
+    accumulated special-token text (parse it with ``sam_parse.parse_output``),
+    ``usage`` is the response usage dict (includes ``video_frames_processed``), and
+    ``model_served`` is the model id the response reports. Streaming is the
     recommended path for video."""
     req = dict(
         model=MODEL,
@@ -95,4 +96,4 @@ def segment_phrase(
     usage = {}
     if getattr(final, "usage", None) is not None:
         usage = final.usage.model_dump() if hasattr(final.usage, "model_dump") else dict(final.usage)
-    return text, usage
+    return text, usage, getattr(final, "model", None)
