@@ -144,6 +144,9 @@ class RunInfo(BaseModel):
     n_model_calls: int = 0
     cost_usd: float = 0.0
     created_at: str
+    # Added Oct 29 (additive): true if any agent call fell back to the closed
+    # Muse Spark 1.3. Off by default; eval and demo runs never enable it.
+    used_closed_fallback: bool = False
 
 
 class Report(BaseModel):

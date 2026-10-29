@@ -25,6 +25,7 @@ dependencies:
       # Video / masks / eval
       - numpy>=1.26
       - opencv-python-headless>=4.9
+      - meta-sam-parser==0.1.0  # Meta's SAM mask decoder (arithmetic-coded base85)
       - pillow>=10.2
       - pandas>=2.2
       # Dev

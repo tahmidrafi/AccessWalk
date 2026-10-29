@@ -285,6 +285,11 @@
         "created_at": {
           "title": "Created At",
           "type": "string"
+        },
+        "used_closed_fallback": {
+          "default": false,
+          "title": "Used Closed Fallback",
+          "type": "boolean"
         }
       },
       "required": [

@@ -53,8 +53,11 @@ class Rejection(BaseModel):
 
 
 def validate_citation(
-    raw: dict, inv: Inventory, meta: IngestMeta, rules: Rules
+    raw: dict, inv: Inventory, meta: IngestMeta, rules: Rules,
+    extra_phrases: dict[str, set[str]] | None = None,
 ) -> Finding | Rejection:
+    """``extra_phrases`` (check_id -> phrases) admits tracks the agent made with
+    ``recheck_with_sam`` for that check, on top of the rule's evidence phrases."""
     try:
         req = CitationRequest.model_validate(raw)
     except ValidationError as e:
@@ -69,10 +72,11 @@ def validate_citation(
     track = tracks.get(req.track_id)
     if track is None:
         return Rejection(request=raw, reason=f"track {req.track_id!r} is not in this clip's inventory")
-    if track.phrase not in rule.evidence_phrases:
+    allowed = set(rule.evidence_phrases) | (extra_phrases or {}).get(req.check_id, set())
+    if track.phrase not in allowed:
         return Rejection(
             request=raw,
-            reason=f"{req.check_id} must cite a track of {rule.evidence_phrases}, not {track.phrase!r}",
+            reason=f"{req.check_id} must cite a track of {sorted(allowed)}, not {track.phrase!r}",
         )
     box = next((b for b in track.boxes if b.frame_index == req.frame_index), None)
     if box is None:

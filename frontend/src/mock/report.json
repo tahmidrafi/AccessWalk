@@ -3814,7 +3814,8 @@
     "sam_model": "sam-3.1",
     "n_model_calls": 4,
     "cost_usd": 0.0,
-    "created_at": "2026-10-29T02:27:42+00:00"
+    "created_at": "2026-10-29T21:37:44+00:00",
+    "used_closed_fallback": false
   },
   "disclaimer": "Pre-trip screening from a phone video. Findings are likely barriers, not compliance determinations. Items marked 'verify manually' rest on depth, height or slope judged from video alone."
 }
