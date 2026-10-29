@@ -402,10 +402,15 @@ class RunResult:
     models_served: list[str]
     cost_usd: float
     rejections: list[Rejection]
+    tool_counts: dict[str, int]
+    stopped_for_budget: bool
 
 
 def run_agent(ctx: AgentContext, *, allow_closed: bool = False, chat_fn=llm.chat,
-              run_log: Path = RUN_LOG, render: bool = True) -> RunResult:
+              run_log: Path = RUN_LOG, render: bool = True,
+              max_cost_usd: float | None = None) -> RunResult:
+    """Run the agent on one clip. ``max_cost_usd`` stops before a turn that would
+    likely cross the budget (judged from the previous turn's cost)."""
     messages: list[dict] = [
         {"role": "system", "content": system_prompt(ctx.rules)},
         {"role": "user", "content": inventory_prompt(ctx)},
@@ -415,12 +420,19 @@ def run_agent(ctx: AgentContext, *, allow_closed: bool = False, chat_fn=llm.chat
     cost = 0.0
     turns = 0
     nudged = False
+    tool_counts: dict[str, int] = {}
+    last_cost = 0.0
+    budget_stop = False
     for turns in range(1, MAX_TURNS + 1):  # noqa: B007 (turns is reported after the loop)
+        if max_cost_usd is not None and cost + last_cost > max_cost_usd:
+            budget_stop, turns = True, turns - 1
+            break
         res = chat_fn(messages, video_sha256=ctx.meta.video_sha256, tools=TOOLS, params=PARAMS,
                       allow_closed=allow_closed)
         providers.append(res.provider)
         served.append(res.model_served or "")
         cost += res.cost_usd
+        last_cost = res.cost_usd
         msg = _clean(res.message)
         messages.append(msg)
         calls = msg.get("tool_calls", [])
@@ -431,7 +443,9 @@ def run_agent(ctx: AgentContext, *, allow_closed: bool = False, chat_fn=llm.chat
             messages.append({"role": "user", "content": "Use the tools: cite findings, then call finish."})
             continue
         for c in calls:  # parallel calls in one turn run in the order given
-            out = dispatch(ctx, c["function"]["name"], c["function"]["arguments"])
+            name = c["function"]["name"]
+            tool_counts[name] = tool_counts.get(name, 0) + 1
+            out = dispatch(ctx, name, c["function"]["arguments"])
             messages.append({"role": "tool", "tool_call_id": c["id"], "content": json.dumps(out)})
         if ctx.pending_images:
             content = [{"type": "text", "text": "Frames you asked for:"}]
@@ -448,8 +462,9 @@ def run_agent(ctx: AgentContext, *, allow_closed: bool = False, chat_fn=llm.chat
     if render and findings:
         render_frames(ctx.meta, {f.frame_index for f in findings}, ctx.plate_tracks)
     report = build_report(ctx, findings, providers, served, cost, len(providers))
-    _log_run(run_log, ctx, turns, hit_cap, providers, cost, findings)
-    return RunResult(report, turns, hit_cap, providers, served, cost, ctx.rejections)
+    _log_run(run_log, ctx, turns, hit_cap, providers, cost, findings, tool_counts, budget_stop)
+    return RunResult(report, turns, hit_cap, providers, served, cost, ctx.rejections, tool_counts,
+                     budget_stop)
 
 
 def build_report(ctx: AgentContext, findings: list[Finding], providers: list[str], served: list[str],
@@ -488,11 +503,13 @@ def build_report(ctx: AgentContext, findings: list[Finding], providers: list[str
 
 
 def _log_run(path: Path, ctx: AgentContext, turns: int, hit_cap: bool, providers: list[str],
-             cost: float, findings: list[Finding]) -> None:
+             cost: float, findings: list[Finding], tool_counts: dict[str, int] | None = None,
+             budget_stop: bool = False) -> None:
     rec = {"ts": datetime.now(UTC).isoformat(), "video_sha256": ctx.meta.video_sha256,
            "clip": ctx.meta.source.filename, "turns": turns, "hit_turn_cap": hit_cap,
            "finished": ctx.finished, "providers": providers, "cost_usd": round(cost, 4),
-           "n_findings": len(findings), "n_rejections": len(ctx.rejections), "rechecks": ctx.rechecks}
+           "n_findings": len(findings), "n_rejections": len(ctx.rejections), "rechecks": ctx.rechecks,
+           "views": ctx.views, "tool_counts": tool_counts or {}, "stopped_for_budget": budget_stop}
     if hit_cap:
         rec["warning"] = f"hit the {MAX_TURNS}-turn cap before finish"
     path.parent.mkdir(parents=True, exist_ok=True)

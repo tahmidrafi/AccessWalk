@@ -55,3 +55,15 @@ def test_duplicates_across_phrases_keep_more_confident():
     )
     dup = find_duplicates(slab + crack + bin_ + other_slab)
     assert dup == {"cracked-pavement-0": "raised-sidewalk-slab-0"}  # same phrase never merged
+
+
+def test_mask_png_is_full_frame_with_transparent_background():
+    import numpy as np
+    from accesswalk.inventory import mask_png
+    rec = _rec(0, 0, 10, 20, 14, 24)
+    raster = np.zeros((5, 5), dtype=np.uint8)
+    raster[1:4, 1:4] = 1
+    img = mask_png(rec, raster)
+    assert img.shape == (1280, 720, 4)               # sam.mp4 size, BGRA
+    assert img[:, :, 3].sum() == 9 * 255              # only the 3x3 object is opaque
+    assert tuple(img[22, 12]) == (255, 255, 255, 255) and img[20, 10, 3] == 0

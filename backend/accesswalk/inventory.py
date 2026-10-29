@@ -25,8 +25,10 @@ import re
 from pathlib import Path
 
 import cv2
+import numpy as np
 from pydantic import BaseModel
 
+from . import masks
 from .ingest import DEFAULT_OUT_ROOT, IngestMeta
 from .phrases import PLATE_PHRASE
 from .sam_parse import SamRecord, to_tracks
@@ -171,6 +173,40 @@ def render_frames(
     return written
 
 
+def mask_png(rec: SamRecord, raster: np.ndarray) -> np.ndarray:
+    """Full-frame BGRA image (sam.mp4 size, e.g. 720x1280): white where the object
+    is, fully transparent elsewhere. The report overlay reads only the alpha."""
+    out = np.zeros((rec.frame_h, rec.frame_w, 4), dtype=np.uint8)
+    h = min(raster.shape[0], rec.frame_h - rec.y1)
+    w = min(raster.shape[1], rec.frame_w - rec.x1)
+    on = raster[:h, :w].astype(bool)
+    region = out[rec.y1:rec.y1 + h, rec.x1:rec.x1 + w]
+    region[on] = (255, 255, 255, 255)
+    return out
+
+
+def render_masks(
+    meta: IngestMeta, tracks: list[Track], records_by_phrase: dict[str, list[SamRecord]],
+    out_root: str | Path = DEFAULT_OUT_ROOT,
+) -> dict[str, str]:
+    """Keyframe mask PNG per track -> ``masks/<track_id>_f<i>.png``. Returns track_id -> URL."""
+    clip_dir = Path(out_root) / meta.video_sha256
+    urls: dict[str, str] = {}
+    for t in tracks:
+        rec = next((r for r in records_by_phrase.get(t.phrase, [])
+                    if r.object_id == t.object_id and r.frame_index == t.keyframe_index), None)
+        if rec is None or rec.mask is None:
+            continue
+        name = f"{t.track_id}_f{t.keyframe_index}.png"
+        path = clip_dir / "masks" / name
+        if not path.exists():
+            raster = masks.decode_raster(rec.mask, clip_dir / "masks")
+            path.parent.mkdir(parents=True, exist_ok=True)
+            cv2.imwrite(str(path), mask_png(rec, raster))
+        urls[t.track_id] = f"/media/{meta.video_sha256}/masks/{name}"
+    return urls
+
+
 class Inventory(BaseModel):
     video_sha256: str
     tracks: list[Track]  # every non-plate track, duplicates included
@@ -189,8 +225,9 @@ def build_inventory(
 ) -> Inventory:
     tracks: list[Track] = []
     plate_tracks: list[Track] = []
-    for phrase, records in records_by_phrase.items():
-        built = build_tracks(phrase, stitch_ids(records), meta)
+    stitched = {phrase: stitch_ids(records) for phrase, records in records_by_phrase.items()}
+    for phrase, records in stitched.items():
+        built = build_tracks(phrase, records, meta)
         (plate_tracks if phrase == PLATE_PHRASE else tracks).extend(built)
     inv = Inventory(video_sha256=meta.video_sha256, tracks=tracks, duplicates=find_duplicates(tracks))
     if render:
@@ -198,5 +235,8 @@ def build_inventory(
         for t in inv.tracks:
             if t.keyframe_index in frames:
                 t.keyframe_url = f"/media/{meta.video_sha256}/frames/{t.keyframe_index}.jpg"
+        mask_urls = render_masks(meta, inv.kept(), stitched, out_root)
+        for t in inv.tracks:
+            t.mask_url = mask_urls.get(t.track_id)
         (Path(out_root) / meta.video_sha256 / "inventory.json").write_text(inv.model_dump_json(indent=2))
     return inv

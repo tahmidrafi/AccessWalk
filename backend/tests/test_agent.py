@@ -211,3 +211,10 @@ def test_view_frame_cap():
     for _ in range(agent.MAX_VIEWS):
         assert agent.tool_view_frame(ctx, 1)["ok"]
     assert "limit" in agent.tool_view_frame(ctx, 1)["error"]
+
+
+def test_budget_cap_stops_before_overspending(tmp_path):
+    res = agent.run_agent(_ctx(), chat_fn=FakeChat([]), run_log=tmp_path / "r.jsonl", render=False,
+                          max_cost_usd=0.0035)  # each fake turn costs 0.001
+    assert res.stopped_for_budget and res.turns == 3 and res.cost_usd <= 0.0035
+    assert res.tool_counts == {"get_track": 3}
