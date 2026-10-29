@@ -11,14 +11,17 @@ interface Props {
   track: Track | undefined
   related: Track[]
   selected: boolean
+  inView: boolean
+  /** Seek the video to this finding; absent when there is no video. */
+  onShowInVideo?: () => void
 }
 
-export function FindingCard({ finding: f, number, video, track, related, selected }: Props) {
+export function FindingCard({ finding: f, number, video, track, related, selected, inView, onShowInVideo }: Props) {
   const headingId = `${findingAnchor(f)}-title`
   return (
     <article
       id={findingAnchor(f)}
-      className={`finding sev-${f.severity}${selected ? ' finding-selected' : ''}`}
+      className={`finding sev-${f.severity}${selected ? ' finding-selected' : ''}${inView ? ' finding-inview' : ''}`}
       aria-labelledby={headingId}
       tabIndex={-1}
     >
@@ -41,6 +44,11 @@ export function FindingCard({ finding: f, number, video, track, related, selecte
                 <span aria-hidden="true">⚠ </span>Verify manually
               </li>
             )}
+            {inView && (
+              <li className="badge badge-inview">
+                <span aria-hidden="true">● </span>In view in the video
+              </li>
+            )}
           </ul>
         </header>
 
@@ -61,6 +69,12 @@ export function FindingCard({ finding: f, number, video, track, related, selecte
             <dd>{Math.round(f.confidence * 100)}%</dd>
           </div>
         </dl>
+
+        {onShowInVideo && (
+          <button type="button" className="finding-seek" onClick={onShowInVideo}>
+            <span aria-hidden="true">▶ </span>Show in video at {formatClock(f.frame_ms)}
+          </button>
+        )}
 
         <p className="finding-evidence">{f.evidence_note}</p>
         {f.verify_manually && (
