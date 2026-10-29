@@ -1,0 +1,32 @@
+{
+  "clip": "PXL_20261027_211833467",
+  "annotator": "claude-draft",
+  "status": "draft",
+  "duration_s": 22.201,
+  "barriers": [
+    {
+      "check": "surface_damage",
+      "t": [9.5, 11.5],
+      "sev": "medium",
+      "note": "cracked slab, outer corner dropped toward the dirt strip",
+      "verify": true
+    },
+    {
+      "check": "surface_damage",
+      "t": [11.5, 16.5],
+      "sev": "high",
+      "note": "heaved slab broken into pieces beside the tree trunk, roots under the edge",
+      "verify": true
+    },
+    {
+      "check": "surface_damage",
+      "t": [16.5, 19.0],
+      "sev": "low",
+      "note": "cracks and shifted joints past the tree; lips look small",
+      "verify": true
+    }
+  ],
+  "clean": [[0.0, 5.0], [19.5, 22.2]],
+  "not_applicable": ["missing_curb_ramp", "steps_without_ramp", "missing_handrail", "round_doorknob"],
+  "notes": "Example written by Claude from the blurred 1 fps contact sheet; Tahmid to check every range against the video and set status to done. 5.0-9.5 s left unlabelled (cracks near the utility cover, not sure). Trash bin at ~1 s is beside the sidewalk, not on it."
+}

@@ -27,7 +27,7 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 - [x] `d4-inventory` Inventory: dedupe tracks, best keyframe, face/plate blur (Pipeline, A)
 - [x] `d4-schema` Freeze schemas.py, export JSON Schema + mock report.json (Pipeline, A)
 - [x] `d4-blurcheck` Face blur checked on a clip with a real person; blur made two-pass with gap bridging (Privacy, A)
-- [ ] `d4-annotate5` Annotation format + annotate 5 clips (Data, You)
+- [~] `d4-annotate5` Annotation format + annotate 5 clips (Data, You) -- format, README, checker + clip-1 draft done (A); 5 clips to annotate (You)
 - [x] `d4-phrasegaps` Ramp/curb-ramp phrases: SAM localizes no ramp; "tactile paving" added (curb-ramp pad), "ramp"/"curb ramp" dropped; ramps judged by the agent (Pipeline, A)
 - [x] `d4-fescaffold` Vite scaffold + report page on mock data (Frontend, B)
 
@@ -44,6 +44,7 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 - [ ] `d6-quality` Agent quality: re-checks, confidence (Pipeline, A)
 - [ ] `d6-transcribe` Voice Transcribe → location tags (optional; handles silent clips) (Pipeline, A)
 - [ ] `d6-verdict` Route-level verdict (Pipeline, A)
+- [ ] `d6-api` FastAPI: upload, job status, report JSON, /media frames (Pipeline, A)
 - [ ] `d6-mapanything` MapAnything spike on Modal (2 h cap): go/no-go (Pipeline, A)
 - [ ] `d6-fewire` Upload + job status + report wired to real JSON (Frontend, B)
 - [ ] `d6-annotatenew` Annotate the new gap clips (Data, You)
