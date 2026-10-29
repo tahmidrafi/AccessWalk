@@ -38,13 +38,15 @@ class SegmentResult(BaseModel):
 
 
 def cache_key(
-    model: str, phrase: str, mask_encoding: str,
+    model: str, phrase: str, request_metadata: dict,
     ingest_version: int, sam_fps: float, sam_w: int, sam_h: int,
 ) -> str:
+    # Hash the whole request metadata dict (not just one field) so no future
+    # request flag can silently collide with an old cache entry.
     blob = json.dumps(
         {
             "schema": CACHE_SCHEMA, "model": model, "phrase": phrase,
-            "mask_encoding": mask_encoding, "ingest_version": ingest_version,
+            "metadata": request_metadata, "ingest_version": ingest_version,
             "sam_fps": sam_fps, "sam_w": sam_w, "sam_h": sam_h,
         },
         sort_keys=True,
@@ -69,6 +71,7 @@ def segment_cached(
     provider: str = "meta",
     model: str = sam.MODEL,
     mask_encoding: str = "one_bit",
+    include_confidence: bool = True,
     out_root: str | Path = DEFAULT_OUT_ROOT,
     usage_log: str | Path = usage.DEFAULT_USAGE_LOG,
     file_id: str | None = None,
@@ -78,8 +81,12 @@ def segment_cached(
 ) -> SegmentResult:
     """Segment one ``phrase``, using the cache when possible. ``file_id`` lets the
     caller upload the clip once and reuse it across phrases."""
+    request_metadata = {
+        "mask_encoding": mask_encoding,
+        "include_confidence": "true" if include_confidence else "false",
+    }
     key = cache_key(
-        model, phrase, mask_encoding,
+        model, phrase, request_metadata,
         meta.ingest_version, meta.sam.fps, meta.sam.width, meta.sam.height,
     )
     cpath = cache_path(out_root, meta.video_sha256, key)
@@ -92,7 +99,10 @@ def segment_cached(
     else:
         if file_id is None:
             file_id = upload_fn(client, sam_mp4)
-        text, used, served = segment_fn(client, file_id, phrase, mask_encoding=mask_encoding)
+        text, used, served = segment_fn(
+            client, file_id, phrase,
+            mask_encoding=mask_encoding, include_confidence=include_confidence,
+        )
         if not used:
             # No usage reported -> treat as an incomplete stream; do not cache.
             raise RuntimeError(f"SAM returned no usage for phrase {phrase!r}; not caching a partial result")
@@ -102,7 +112,7 @@ def segment_cached(
             json.dumps(
                 {
                     "schema": CACHE_SCHEMA, "model": model, "phrase": phrase,
-                    "mask_encoding": mask_encoding, "output_text": text,
+                    "metadata": request_metadata, "output_text": text,
                     "usage": used, "model_served": served,
                     "created_at": datetime.now(UTC).isoformat(),
                 },

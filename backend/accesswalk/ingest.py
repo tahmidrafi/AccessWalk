@@ -166,6 +166,27 @@ def _scaled_dims(disp_w: int, disp_h: int, short_side: int) -> tuple[int, int]:
 DETECT_LONG_SIDE = 960  # run YuNet on a frame no larger than this; scale boxes back up
 
 
+def detections_to_boxes(
+    faces, inv: float, pad: float, w: int, h: int
+) -> list[tuple[int, int, int, int]]:
+    """Map YuNet detections (Nx15 on the downscaled frame) to padded, clipped
+    full-resolution boxes. ``inv`` scales detection coords back to full res. Pure
+    (no OpenCV state) so the scale-back + pad + clip logic can be unit-tested."""
+    boxes: list[tuple[int, int, int, int]] = []
+    if faces is None:
+        return boxes
+    for f in faces:
+        fx, fy, fw, fh = (v * inv for v in f[:4])
+        px, py = fw * pad, fh * pad
+        x1 = max(0, int(fx - px))
+        y1 = max(0, int(fy - py))
+        x2 = min(w, int(fx + fw + px))
+        y2 = min(h, int(fy + fh + py))
+        if x2 > x1 and y2 > y1:
+            boxes.append((x1, y1, x2, y2))
+    return boxes
+
+
 def _blur_faces_stream(
     raw: Path,
     src: SourceMeta,
@@ -212,15 +233,8 @@ def _blur_faces_stream(
             if faces is not None and len(faces):
                 faces_frames += 1
                 faces_boxes += len(faces)
-                for f in faces:
-                    fx, fy, fw, fh = (v * inv for v in f[:4])
-                    px, py = fw * pad, fh * pad
-                    x1 = max(0, int(fx - px))
-                    y1 = max(0, int(fy - py))
-                    x2 = min(w, int(fx + fw + px))
-                    y2 = min(h, int(fy + fh + py))
-                    if x2 > x1 and y2 > y1:
-                        held.append([x1, y1, x2, y2, hold])
+                for x1, y1, x2, y2 in detections_to_boxes(faces, inv, pad, w, h):
+                    held.append([x1, y1, x2, y2, hold])
 
             # Blur every held box (current + recently held), then age them.
             for box in held:
@@ -350,7 +364,10 @@ def ingest(
     out_dir = Path(out_root) / digest
     meta_path = out_dir / "meta.json"
     if meta_path.exists() and not force:
-        return IngestMeta.model_validate_json(meta_path.read_text())
+        cached = IngestMeta.model_validate_json(meta_path.read_text())
+        if cached.ingest_version == INGEST_VERSION:
+            return cached
+        # stale ingest: params changed since this clip was processed -> re-ingest
     out_dir.mkdir(parents=True, exist_ok=True)
 
     src = probe_source(raw)

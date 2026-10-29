@@ -61,6 +61,7 @@ def segment_phrase(
     file_id: str,
     phrase: str,
     mask_encoding: str = "one_bit",
+    include_confidence: bool = True,
 ) -> tuple[str, dict, str | None]:
     """Segment one noun ``phrase`` against an uploaded video.
 
@@ -81,7 +82,11 @@ def segment_phrase(
                 ],
             }
         ],
-        metadata={"mask_encoding": mask_encoding},
+        metadata={
+            # Metadata values are strings per the API: send "true", not a bool.
+            "mask_encoding": mask_encoding,
+            "include_confidence": "true" if include_confidence else "false",
+        },
     )
     chunks: list[str] = []
     with client.responses.stream(**req) as stream:

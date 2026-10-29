@@ -25,10 +25,14 @@ from accesswalk.sam_parse import parse_output, to_tracks  # noqa: E402
 RAW = REPO_ROOT / "data" / "raw" / "PXL_20261027_211833467.mp4"
 
 
-def main(phrase: str, mask_encoding: str = "one_bit") -> int:
+def main(phrase: str, mask_encoding: str = "one_bit", include_confidence: bool = True) -> int:
     meta = ingest(RAW)
+    request_metadata = {
+        "mask_encoding": mask_encoding,
+        "include_confidence": "true" if include_confidence else "false",
+    }
     key = cache.cache_key(
-        MODEL, phrase, mask_encoding,
+        MODEL, phrase, request_metadata,
         meta.ingest_version, meta.sam.fps, meta.sam.width, meta.sam.height,
     )
     cpath = cache.cache_path(DEFAULT_OUT_ROOT, meta.video_sha256, key)

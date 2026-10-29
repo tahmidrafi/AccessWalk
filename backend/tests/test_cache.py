@@ -26,7 +26,7 @@ def _meta(sha="deadbeef", ingest_version=1) -> IngestMeta:
     )
 
 
-def _good_segment(_client, _file_id, _phrase, mask_encoding="one_bit"):
+def _good_segment(_client, _file_id, _phrase, mask_encoding="one_bit", include_confidence=True):
     return SAM_TEXT, {"video_frames_processed": 111}, "sam-3.1"
 
 
@@ -79,7 +79,7 @@ def test_cache_hit_skips_network(tmp_path):
 def test_incomplete_stream_is_not_cached(tmp_path):
     log = tmp_path / "usage.jsonl"
 
-    def _no_usage(_c, _f, _p, mask_encoding="one_bit"):
+    def _no_usage(_c, _f, _p, mask_encoding="one_bit", include_confidence=True):
         return "", {}, None  # no usage -> incomplete
 
     with pytest.raises(RuntimeError):
@@ -87,11 +87,19 @@ def test_incomplete_stream_is_not_cached(tmp_path):
             None, _meta(), "handrail", out_root=tmp_path, usage_log=log,
             segment_fn=_no_usage, upload_fn=lambda c, p: "file-x",
         )
-    key = cache.cache_key("sam-3.1", "handrail", "one_bit", 1, 5.0, 720, 1280)
+    md = {"mask_encoding": "one_bit", "include_confidence": "true"}
+    key = cache.cache_key("sam-3.1", "handrail", md, 1, 5.0, 720, 1280)
     assert not cache.cache_path(tmp_path, "deadbeef", key).exists()
 
 
-def test_ingest_version_changes_key(tmp_path):
-    k1 = cache.cache_key("sam-3.1", "tree root", "one_bit", 1, 5.0, 720, 1280)
-    k2 = cache.cache_key("sam-3.1", "tree root", "one_bit", 2, 5.0, 720, 1280)
-    assert k1 != k2
+def test_ingest_version_changes_key():
+    md = {"mask_encoding": "one_bit", "include_confidence": "true"}
+    assert cache.cache_key("sam-3.1", "x", md, 1, 5.0, 720, 1280) != \
+        cache.cache_key("sam-3.1", "x", md, 2, 5.0, 720, 1280)
+
+
+def test_request_metadata_changes_key():
+    conf = {"mask_encoding": "one_bit", "include_confidence": "true"}
+    noconf = {"mask_encoding": "one_bit", "include_confidence": "false"}
+    assert cache.cache_key("sam-3.1", "x", conf, 1, 5.0, 720, 1280) != \
+        cache.cache_key("sam-3.1", "x", noconf, 1, 5.0, 720, 1280)
