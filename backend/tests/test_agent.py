@@ -182,3 +182,32 @@ def test_failover_stays_open_weight_unless_flagged(tmp_path):
         llm.chat([{"role": "user", "content": "z"}], call_fn=only("meta"), **kw)
     r = llm.chat([{"role": "user", "content": "z"}], call_fn=only("meta"), allow_closed=True, **kw)
     assert r.used_closed_model
+
+
+def test_view_frame_sends_images_after_tool_results(tmp_path):
+    ctx = _ctx()
+    ctx.frame_loader = lambda c, i: np.zeros((1280, 720, 3), dtype=np.uint8)
+    chat = FakeChat([
+        {"role": "assistant", "content": "", "tool_calls": [
+            _call(1, "view_frame", frame_index=12, track_ids=["raised-sidewalk-slab-0", "trash-bin-0"]),
+            _call(2, "view_frame", frame_index=999)]},
+        {"role": "assistant", "content": "",
+         "tool_calls": [_call(3, "finish", not_applicable=[], summary="s")]},
+    ])
+    agent.run_agent(ctx, chat_fn=chat, run_log=tmp_path / "r.jsonl", render=False)
+    sent = chat.sent[1][0]
+    roles = [m["role"] for m in sent[-3:]]
+    assert roles == ["tool", "tool", "user"]  # images only after every tool result of the turn
+    t1, t2 = json.loads(sent[-3]["content"]), json.loads(sent[-2]["content"])
+    assert t1["ok"] and t1["no_box_on_this_frame"] == ["trash-bin-0"] and "error" in t2
+    imgs = [p for p in sent[-1]["content"] if p["type"] == "image_url"]
+    assert len(imgs) == 1 and imgs[0]["image_url"]["url"].startswith("data:image/jpeg;base64,")
+    assert ctx.views == 1
+
+
+def test_view_frame_cap():
+    ctx = _ctx()
+    ctx.frame_loader = lambda c, i: np.zeros((1280, 720, 3), dtype=np.uint8)
+    for _ in range(agent.MAX_VIEWS):
+        assert agent.tool_view_frame(ctx, 1)["ok"]
+    assert "limit" in agent.tool_view_frame(ctx, 1)["error"]

@@ -4,23 +4,28 @@ One run per clip. The model starts from the rules and a text inventory of the
 clip's tracks, then works with tools:
 
   get_track(track_id)                         boxes over time + mask-based on-sidewalk share
-  view_frame(frame_index, track_ids)          (added after the image smoke test)
+  view_frame(frame_index, track_ids)          the blurred frame with those boxes drawn (an image)
   recheck_with_sam(phrase, start_ms, end_ms, for_check)   new SAM tracks on a window
   cite_finding(...)                           validator.py: a Finding, or a fixable reason
   finish(not_applicable, summary)             ends the run
 
-Several tool calls per turn are allowed and executed in order. Caps: MAX_TURNS
+Several tool calls per turn are allowed and executed in order. Tool messages
+carry text only, so the images from a turn's view_frame calls follow the tool
+results as one user message. Caps: MAX_TURNS
 model turns (hitting it is logged and the run ends with what was cited),
 MAX_RECHECKS SAM rechecks. Every model call goes through llm.chat (cache + usage
 log, open-weight hosts only unless allow_closed).
 """
 from __future__ import annotations
 
+import base64
 import json
 import subprocess
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+
+import cv2
 
 from . import cache, llm, masks, usage
 from .ingest import DEFAULT_OUT_ROOT, IngestMeta, ingest
@@ -35,6 +40,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RUN_LOG = REPO_ROOT / "data" / "out" / "agent_runs.jsonl"
 MAX_TURNS = 20
 MAX_RECHECKS = 2
+MAX_VIEWS = 12
+VIEW_WIDTH = 512  # ~1.1k input tokens per image (smoke test, Oct 29)
 SAMPLE_BOXES = 8
 PARAMS = {"temperature": 0, "max_tokens": 8000, "parallel_tool_calls": True}
 
@@ -55,6 +62,12 @@ TOOLS = [
         "the object's ground-contact points (bottom of its mask) inside the sidewalk mask on that frame "
         "(null = no sidewalk mask there).",
         {"track_id": {"type": "string"}}, ["track_id"]),
+    _fn("view_frame", "See one frame of the face- and plate-blurred video, with the boxes of up to 4 "
+        f"tracks drawn and labelled. Use it to judge ramps, curb ramps, knob shapes and heights. At most "
+        f"{MAX_VIEWS} per clip.",
+        {"frame_index": {"type": "integer"},
+         "track_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 4}},
+        ["frame_index"]),
     _fn("recheck_with_sam", "Run SAM 3.1 with a new short noun phrase on a time window (>= 10 s is "
         f"billed anyway). New tracks can be cited for for_check. At most {MAX_RECHECKS} per clip.",
         {"phrase": {"type": "string"}, "start_ms": {"type": "integer"}, "end_ms": {"type": "integer"},
@@ -92,10 +105,13 @@ class AgentContext:
     rejections: list[Rejection] = field(default_factory=list)
     extra_phrases: dict[str, set[str]] = field(default_factory=dict)
     rechecks: int = 0
+    views: int = 0
+    pending_images: list[tuple[str, str]] = field(default_factory=list)  # (caption, data URL)
     finished: bool = False
     not_applicable: list[str] = field(default_factory=list)
     summary: str = ""
     recheck_fn: object = None  # (ctx, phrase, start_ms, end_ms) -> list[SamRecord]
+    frame_loader: object = None  # (ctx, frame_index) -> BGR image; default _frame_image
 
 
 def load_context(clip_stem: str, out_root: Path = DEFAULT_OUT_ROOT) -> AgentContext:
@@ -111,7 +127,8 @@ def load_context(clip_stem: str, out_root: Path = DEFAULT_OUT_ROOT) -> AgentCont
         for p in SAM_PHRASES
     }
     plates = build_tracks(PLATE_PHRASE, records.pop(PLATE_PHRASE), meta)
-    return AgentContext(meta=meta, inv=inv, records=records, rules=load_rules(), plate_tracks=plates)
+    return AgentContext(meta=meta, inv=inv, records=records, rules=load_rules(), plate_tracks=plates,
+                        recheck_fn=sam_recheck)
 
 
 # --------------------------------------------------------------------------- #
@@ -251,6 +268,47 @@ def tool_finish(ctx: AgentContext, not_applicable: list, summary: str) -> dict:
     return {"ok": True}
 
 
+COLORS = [(0, 0, 255), (0, 200, 0), (255, 128, 0), (0, 200, 255)]
+
+
+def _frame_image(ctx: AgentContext, frame_index: int):
+    """BGR frame from the face-blurred sam.mp4 with plates blurred (rendered once, cached)."""
+    path = DEFAULT_OUT_ROOT / ctx.meta.video_sha256 / "frames" / f"{frame_index}.jpg"
+    if not path.exists():
+        render_frames(ctx.meta, {frame_index}, ctx.plate_tracks)
+    return cv2.imread(str(path))
+
+
+def tool_view_frame(ctx: AgentContext, frame_index: int, track_ids: list | None = None) -> dict:
+    if ctx.views >= MAX_VIEWS:
+        return {"error": f"view limit ({MAX_VIEWS}) reached; cite from what you have"}
+    if not 0 <= frame_index < ctx.meta.sam.n_frames:
+        return {"error": f"frame_index must be 0-{ctx.meta.sam.n_frames - 1}"}
+    track_ids = list(track_ids or [])[:4]
+    img = (ctx.frame_loader or _frame_image)(ctx, frame_index)
+    drawn, absent = [], []
+    for i, tid in enumerate(track_ids):
+        t = _track(ctx, tid)
+        b = next((b for b in t.boxes if b.frame_index == frame_index), None) if t else None
+        if b is None:
+            absent.append(tid)
+            continue
+        c = COLORS[i % len(COLORS)]
+        cv2.rectangle(img, (b.x1, b.y1), (b.x2, b.y2), c, 4)
+        cv2.putText(img, tid, (b.x1 + 4, max(28, b.y1 - 8)), cv2.FONT_HERSHEY_SIMPLEX, 0.9, c, 2)
+        drawn.append(tid)
+    h, w = img.shape[:2]
+    img = cv2.resize(img, (VIEW_WIDTH, round(h * VIEW_WIDTH / w)))
+    ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 80])
+    ctx.views += 1
+    caption = f"frame {frame_index} ({ctx.meta.frame_ms[frame_index] / 1000:.1f} s), boxes: {drawn or 'none'}"
+    ctx.pending_images.append((caption, "data:image/jpeg;base64," + base64.b64encode(buf.tobytes()).decode()))
+    out: dict = {"ok": True, "image": f"attached after the tool results: {caption}"}
+    if absent:
+        out["no_box_on_this_frame"] = absent
+    return out
+
+
 def dispatch(ctx: AgentContext, name: str, arguments: str) -> dict:
     try:
         args = json.loads(arguments or "{}")
@@ -259,6 +317,8 @@ def dispatch(ctx: AgentContext, name: str, arguments: str) -> dict:
     try:
         if name == "get_track":
             return tool_get_track(ctx, args["track_id"])
+        if name == "view_frame":
+            return tool_view_frame(ctx, int(args["frame_index"]), args.get("track_ids"))
         if name == "recheck_with_sam":
             return tool_recheck(ctx, args["phrase"], int(args["start_ms"]), int(args["end_ms"]),
                                 args["for_check"])
@@ -372,6 +432,13 @@ def run_agent(ctx: AgentContext, *, allow_closed: bool = False, chat_fn=llm.chat
         for c in calls:  # parallel calls in one turn run in the order given
             out = dispatch(ctx, c["function"]["name"], c["function"]["arguments"])
             messages.append({"role": "tool", "tool_call_id": c["id"], "content": json.dumps(out)})
+        if ctx.pending_images:
+            content = [{"type": "text", "text": "Frames you asked for:"}]
+            for caption, url in ctx.pending_images:
+                content.append({"type": "text", "text": caption})
+                content.append({"type": "image_url", "image_url": {"url": url}})
+            messages.append({"role": "user", "content": content})
+            ctx.pending_images = []
         if ctx.finished:
             break
     hit_cap = not ctx.finished and turns >= MAX_TURNS
