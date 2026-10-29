@@ -1,0 +1,126 @@
+"""Citation validator (d5-validator): the gate between the agent and the report.
+
+The agent proposes a finding through ``cite_finding``; this module turns the
+proposal into a ``schemas.Finding`` or rejects it with a reason the agent can
+act on. A finding survives only if it is grounded:
+
+  * the check exists in rules.yaml;
+  * the cited track exists in this clip's inventory (plate tracks never do);
+  * the track's phrase is one of the check's ``evidence_phrases`` (no citing a
+    car as surface damage);
+  * the track has a box on the cited frame -- the box is copied from the track,
+    never taken from the model, so a finding's overlay is always SAM's box;
+  * related tracks exist;
+  * the wording says "likely barrier", never "violation" / "non-compliant".
+
+``verify_manually`` comes from the rule, not the model. ``finalize`` merges
+repeat citations of the same object for the same check and numbers findings in
+time order. Findings that never pass validation are dropped from the report.
+"""
+from __future__ import annotations
+
+import re
+
+from pydantic import BaseModel, Field, ValidationError
+
+from .ingest import IngestMeta
+from .inventory import Inventory
+from .rules import Rules
+from .schemas import BBox, Finding
+
+BANNED = re.compile(
+    r"\b(violat\w*|non-?complian\w*|illegal|unlawful|out of compliance|ada compliant)\b", re.I
+)
+
+
+class CitationRequest(BaseModel):
+    """Arguments of the agent's ``cite_finding`` tool call."""
+
+    check_id: str
+    track_id: str
+    frame_index: int
+    severity: str
+    confidence: float = Field(ge=0, le=1)
+    title: str = Field(min_length=3, max_length=90)
+    evidence_note: str = Field(min_length=20, max_length=600)
+    related_track_ids: list[str] = Field(default_factory=list)
+    location_tag: str | None = None
+
+
+class Rejection(BaseModel):
+    request: dict
+    reason: str
+
+
+def validate_citation(
+    raw: dict, inv: Inventory, meta: IngestMeta, rules: Rules
+) -> Finding | Rejection:
+    try:
+        req = CitationRequest.model_validate(raw)
+    except ValidationError as e:
+        return Rejection(request=raw, reason=f"bad arguments: {e.errors()[0]['loc']}: {e.errors()[0]['msg']}")
+
+    rule = rules.checks.get(req.check_id)  # type: ignore[call-overload]
+    if rule is None:
+        return Rejection(
+            request=raw, reason=f"unknown check_id {req.check_id!r}; use one of {sorted(rules.checks)}"
+        )
+    tracks = {t.track_id: t for t in inv.tracks}
+    track = tracks.get(req.track_id)
+    if track is None:
+        return Rejection(request=raw, reason=f"track {req.track_id!r} is not in this clip's inventory")
+    if track.phrase not in rule.evidence_phrases:
+        return Rejection(
+            request=raw,
+            reason=f"{req.check_id} must cite a track of {rule.evidence_phrases}, not {track.phrase!r}",
+        )
+    box = next((b for b in track.boxes if b.frame_index == req.frame_index), None)
+    if box is None:
+        frames = [b.frame_index for b in track.boxes]
+        return Rejection(
+            request=raw,
+            reason=f"track {req.track_id} has no box on frame {req.frame_index}; "
+                   f"it is visible on frames {frames[0]}-{frames[-1]} (keyframe {track.keyframe_index})",
+        )
+    unknown = [r for r in req.related_track_ids if r not in tracks]
+    if unknown:
+        return Rejection(request=raw, reason=f"related tracks not in inventory: {unknown}")
+    if req.severity not in rule.severity:
+        return Rejection(request=raw, reason=f"severity must be one of {sorted(rule.severity)}")
+    for text in (req.title, req.evidence_note):
+        hit = BANNED.search(text)
+        if hit:
+            return Rejection(
+                request=raw,
+                reason=f"wording {hit.group(0)!r} is not allowed: describe a likely barrier, not a violation",
+            )
+
+    return Finding(
+        finding_id="pending",
+        check_id=req.check_id,  # type: ignore[arg-type]
+        title=req.title,
+        severity=req.severity,  # type: ignore[arg-type]
+        confidence=round(req.confidence, 2),
+        track_id=track.track_id,
+        frame_index=box.frame_index,
+        frame_ms=meta.frame_ms[box.frame_index],
+        bbox=BBox(x1=box.x1, y1=box.y1, x2=box.x2, y2=box.y2),
+        evidence_note=req.evidence_note,
+        location_tag=req.location_tag,
+        verify_manually=rule.verify_manually == "always",
+        reference=rule.reference,
+        related_track_ids=req.related_track_ids,
+        frame_url=f"/media/{meta.video_sha256}/frames/{box.frame_index}.jpg",
+    )
+
+
+def finalize(findings: list[Finding]) -> list[Finding]:
+    """One finding per (check, object): keep the most confident citation. Then
+    number them f1..fn in time order."""
+    best: dict[tuple[str, str], Finding] = {}
+    for f in findings:
+        key = (f.check_id, f.track_id)
+        if key not in best or f.confidence > best[key].confidence:
+            best[key] = f
+    ordered = sorted(best.values(), key=lambda f: (f.frame_ms, f.check_id))
+    return [f.model_copy(update={"finding_id": f"f{i}"}) for i, f in enumerate(ordered, start=1)]

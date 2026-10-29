@@ -33,8 +33,8 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 
 ## D5 · Fri 10/30
 - [ ] `d5-agentloop` Agent loop on Baseten (Muse Spark Open) with tools (Pipeline, A)
-- [ ] `d5-validator` Citation validator: drop findings without track + frame (Pipeline, A)
-- [ ] `d5-rules` Rules YAML for the 8 checks (Pipeline, A)
+- [x] `d5-validator` Citation validator: drop findings without track + frame (Pipeline, A)
+- [x] `d5-rules` Rules YAML for the 8 checks (Pipeline, A)
 - [ ] `d5-fireworks` Fireworks failover switch (config only) (Pipeline, A)
 - [ ] `d5-filmgaps` Film 6–10 gap clips (Data, You)
 - [ ] `d5-fwworkshop` Fireworks workshop (Setup, You)

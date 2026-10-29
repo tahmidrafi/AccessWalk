@@ -1,0 +1,138 @@
+# AccessWalk check rules (d5-rules). Single source for the 8 MVP checks:
+# the agent's instructions, the citation validator, and phrases.py all read this file.
+#
+# Per check:
+#   question          what the agent must decide, in plain words
+#   evidence_phrases  SAM phrases whose tracks a finding may cite (the validator rejects others).
+#                     Also the phrases segmented on every clip (phrases.py).
+#   judged_from       track: the cited object IS the barrier (bin, heaved slab)
+#                     keyframe: the barrier is judged from frames around an anchor track
+#                     (SAM cannot segment ramps or curb ramps, so the agent looks at the
+#                     handrail / stairs / curb / tactile-paving keyframes and decides)
+#   verify_manually   always: the call rests on height, slope or width from video alone
+#                     never: visible yes/no (a round knob is round)
+#   severity          what each bin means for this check
+#   reference         the guideline the check is based on (shown in the report; screening only)
+#   pitfalls          false positives seen in the Oct-27 clips; the agent must rule these out
+#
+# Wording rule for every finding: "likely barrier" / "verify manually", never "violation".
+
+checks:
+  sidewalk_obstruction:
+    title: Sidewalk obstruction
+    question: Does an object stand ON the walking surface and block part of its width?
+    evidence_phrases: [trash bin, car, pole]
+    judged_from: track
+    verify_manually: always
+    severity:
+      high: blocks the walkway so a wheelchair cannot pass without leaving the sidewalk
+      medium: leaves a gap that looks narrower than about 36 in (90 cm)
+      low: intrudes on the edge but leaves a wide path
+    reference: "2010 ADA Standards 403.5.1: 36 in minimum clear width of walking surfaces"
+    pitfalls:
+      - cars parked or driving on the road, not on the sidewalk
+      - bins and poles in the planting strip or beside the walkway
+      - door frames boxed as "pole"
+
+  surface_damage:
+    title: Surface damage
+    question: Is the walking surface heaved, broken, or uneven enough to catch a caster?
+    evidence_phrases: [raised sidewalk slab]
+    judged_from: track
+    verify_manually: always
+    severity:
+      high: a slab edge visibly lifted well above its neighbour, or broken pieces at different heights
+      medium: cracked or tilted slab with an uneven joint; passable with care
+      low: crack or small lip that looks nearly flush
+    reference: "2010 ADA Standards 303.2-303.4: level changes over 1/4 in need a bevel; over 1/2 in, a ramp"
+    pitfalls:
+      - ordinary slab joints and hairline cracks (SAM's raised-slab phrase fires on some flat slabs)
+      - shadows across a flat slab
+
+  missing_curb_ramp:
+    title: Missing curb ramp
+    question: Where the route meets a street crossing, is there a curb ramp, or only a curb step?
+    evidence_phrases: [curb, tactile paving, sidewalk]
+    judged_from: keyframe
+    verify_manually: always
+    severity:
+      high: the route reaches a crossing at a curb step with no ramp in view
+      medium: a ramp exists but looks steep, broken, or blocked at its foot
+      low: a ramp exists but its tactile warning pad is missing
+    reference: "28 CFR 35.151(i) and 2010 ADA Standards 406: curb ramps at pedestrian crossings; 705: detectable warnings"
+    pitfalls:
+      - a curb running along the walkway (no crossing) is not a missing ramp
+      - a tactile pad means a ramp is present; no pad does not prove a ramp is missing
+
+  sidewalk_ends:
+    title: Sidewalk ends
+    question: Does the paved walkway stop and continue as dirt, grass, or road?
+    evidence_phrases: [sidewalk]
+    judged_from: keyframe
+    verify_manually: always
+    severity:
+      high: walkway ends with no paved continuation in view
+      medium: walkway continues only as a narrow or broken path
+      low: short gap, paved again within a few steps
+    reference: "2023 PROWAG R302: pedestrian access routes must be continuous"
+    pitfalls:
+      - the camera tilting up or away so the walkway leaves the frame
+      - a driveway crossing (paved, continuous)
+
+  steps_without_ramp:
+    title: Steps without a ramp
+    question: Does the route include steps, and is there no ramp or level alternative in view?
+    evidence_phrases: [stairs, handrail]
+    judged_from: keyframe
+    verify_manually: always
+    severity:
+      high: steps are the only way forward in view
+      medium: a ramp exists but is far from the steps or hard to find
+      low: a single low step
+    reference: "2010 ADA Standards 206.2 and 405: accessible routes use ramps, not steps"
+    pitfalls:
+      - an indoor staircase beside a level entrance is not on the route
+      - "a ramp with handrails is a ramp, not steps (SAM cannot segment ramps: look at the frame)"
+
+  missing_handrail:
+    title: Missing handrail
+    question: Do steps or a ramp on the route lack a handrail on either side?
+    evidence_phrases: [stairs, handrail]
+    judged_from: keyframe
+    verify_manually: always
+    severity:
+      high: steps or a steep ramp with no handrail at all
+      medium: handrail on one side only
+      low: handrail present but broken or ends early
+    reference: "2010 ADA Standards 405.8 and 505: handrails on both sides of ramps with rise over 6 in and of stairs"
+    pitfalls:
+      - railings along a flat walkway are not required handrails; their absence is not a barrier
+
+  round_doorknob:
+    title: Round doorknob
+    question: Does a door on the route open only with a round knob that needs grasping and twisting?
+    evidence_phrases: [doorknob]
+    judged_from: track
+    verify_manually: never
+    severity:
+      high: round knob on the only entrance door
+      medium: round knob on one of several doors
+      low: knob shape unclear
+    reference: "2010 ADA Standards 309.4 and 404.2.7: operable with one hand, no tight grasping or twisting"
+    pitfalls:
+      - lever handles and pull bars are accessible (SAM's doorknob phrase boxes them too)
+      - automatic doors and push plates
+
+  narrow_passage:
+    title: Narrow passage
+    question: Is the clear walking width squeezed by vegetation, poles, or objects at the edges?
+    evidence_phrases: [overgrown vegetation, pole, trash bin, sidewalk]
+    judged_from: track
+    verify_manually: always
+    severity:
+      high: the clear path looks narrower than a wheelchair (about 32 in / 80 cm)
+      medium: the clear path looks narrower than about 36 in (90 cm)
+      low: growth at the edges, still wide
+    reference: "2010 ADA Standards 403.5.1: 36 in clear width (32 in for at most 24 in of length); 2023 PROWAG R302.3: 4 ft"
+    pitfalls:
+      - grass and leaves lying flat on the walkway edge do not reduce the clear width
