@@ -40,7 +40,10 @@ video the timeline marks link to each finding's evidence instead.
 ## Video and timeline
 
 The video plays with the objects behind the findings drawn on top while they are
-tracked (box held for one SAM frame, 200 ms at 5 fps). On a track's keyframe the
+tracked. Boxes are interpolated linearly between a track's boxes on consecutive
+SAM frames and redrawn on every video frame (requestVideoFrameCallback); across a
+gap in the track, and at its end, the last box holds for one SAM frame (200 ms at
+5 fps) with no extrapolation. On a track's keyframe the
 SAM mask is drawn instead of the box when `mask_url` is set. Timeline marks,
 Previous/Next finding and each card's "Show in video" pause the video on the
 cited frame; the playhead, "In view now" panel (a polite live region) and

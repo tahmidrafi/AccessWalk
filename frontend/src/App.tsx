@@ -11,6 +11,7 @@ import {
   findingsInView,
   loadReport,
   samFrameMs,
+  snapToSamFrame,
   trackById,
 } from './lib/report'
 import { formatClock } from './lib/time'
@@ -22,6 +23,9 @@ const findings = findingsInRouteOrder(report)
 const tracks = trackById(report)
 const numberOf = new Map(findings.map((f, i) => [f.finding_id, i + 1]))
 const frameMs = samFrameMs(report.video)
+// Page state (in-view list, playhead) changes once per SAM frame; only the overlay
+// follows the video frame by frame (see RoutePlayer).
+const snapSam = (ms: number) => snapToSamFrame(ms, frameMs)
 // A shared link to one finding (#finding-f1) opens on that finding.
 const linkedId = findings.find((f) => `#${findingAnchor(f)}` === window.location.hash)?.finding_id ?? null
 
@@ -45,7 +49,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(linkedId)
   const [videoOk, setVideoOk] = useState(Boolean(report.video.proxy_url))
   const videoRef = useRef<HTMLVideoElement>(null)
-  const nowMs = useVideoClock(videoRef, frameMs)
+  const nowMs = useVideoClock(videoRef, snapSam)
   const inView = videoOk ? findingsInView(findings, tracks, nowMs, frameMs) : []
   const inViewIds = new Set(inView.map((f) => f.finding_id))
 
