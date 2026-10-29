@@ -194,9 +194,9 @@ def _blur_faces_stream(
     consumer_stdin,
     pad: float,
     hold: int,
-) -> tuple[int, int]:
+) -> tuple[int, int, int]:
     """Decode autorotated BGR frames, blur faces, write blurred frames to
-    ``consumer_stdin``. Returns (frames_with_detection, total_boxes).
+    ``consumer_stdin``. Returns (frames_written, frames_with_detection, total_boxes).
 
     Detection runs on a downscaled copy (``DETECT_LONG_SIDE``) for speed; boxes
     are scaled back to full resolution and padded, so blurring stays full-res.
@@ -218,6 +218,7 @@ def _blur_faces_stream(
     )
 
     held: list[list[int]] = []  # [x1, y1, x2, y2, ttl]
+    n_frames = 0
     faces_frames = 0
     faces_boxes = 0
     assert producer.stdout is not None
@@ -246,10 +247,14 @@ def _blur_faces_stream(
             held = [[*b[:4], b[4] - 1] for b in held if b[4] - 1 > 0]
 
             consumer_stdin.write(frame.tobytes())
+            n_frames += 1
     finally:
         producer.stdout.close()
         producer.wait()
-    return faces_frames, faces_boxes
+    # A decode failure would otherwise just look like a short clip.
+    if producer.returncode != 0:
+        raise RuntimeError(f"ffmpeg decode of {raw.name} failed (exit {producer.returncode})")
+    return n_frames, faces_frames, faces_boxes
 
 
 # --------------------------------------------------------------------------- #
@@ -263,9 +268,9 @@ def _encode_from_blurred(
     pad: float,
     hold: int,
     stderr_log: Path,
-) -> tuple[int, int]:
+) -> tuple[int, int, int]:
     """Single ffmpeg consumer: blurred BGR frames on stdin -> proxy.mp4 + sam.mp4.
-    Audio is pulled from the raw file (input 1). Returns face-detection counts."""
+    Audio is pulled from the raw file (input 1). Returns (proxy frames, face counts...)."""
     w, h = src.display_width, src.display_height
     sw, sh = _scaled_dims(w, h, SHORT_SIDE)
     proxy_out = out_dir / "proxy.mp4"
@@ -339,6 +344,18 @@ def _frame_ms_table(sam_mp4: Path) -> list[int]:
     return [round(float(t) * 1000) for t in toks if t]
 
 
+def _count_frames(mp4: Path) -> int:
+    out = subprocess.run(
+        [
+            "ffprobe", "-hide_banner", "-v", "error", "-select_streams", "v:0",
+            "-count_packets", "-show_entries", "stream=nb_read_packets",
+            "-of", "csv=p=0", str(mp4),
+        ],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    return int(out.strip().rstrip(","))
+
+
 # --------------------------------------------------------------------------- #
 # driver
 # --------------------------------------------------------------------------- #
@@ -366,6 +383,9 @@ def ingest(
     if meta_path.exists() and not force:
         cached = IngestMeta.model_validate_json(meta_path.read_text())
         if cached.ingest_version == INGEST_VERSION:
+            if cached.proxy.n_frames == 0 and (out_dir / "proxy.mp4").exists():
+                cached.proxy.n_frames = _count_frames(out_dir / "proxy.mp4")
+                meta_path.write_text(cached.model_dump_json(indent=2))
             return cached
         # stale ingest: params changed since this clip was processed -> re-ingest
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -376,7 +396,7 @@ def ingest(
         str(model), "", (src.display_width, src.display_height),
         score_threshold=0.6, nms_threshold=0.3, top_k=5000,
     )
-    faces_frames, faces_boxes = _encode_from_blurred(
+    proxy_frames, faces_frames, faces_boxes = _encode_from_blurred(
         raw, src, out_dir, detector, pad, hold, out_dir / "ffmpeg.stderr.log"
     )
     _extract_audio(raw, out_dir, src.has_audio)
@@ -390,7 +410,7 @@ def ingest(
         created_at=datetime.now(UTC).isoformat(),
         source=src,
         sam=StreamMeta(width=sw, height=sh, fps=float(SAM_FPS), n_frames=len(frame_ms)),
-        proxy=StreamMeta(width=sw, height=sh, fps=src.fps, n_frames=0),
+        proxy=StreamMeta(width=sw, height=sh, fps=src.fps, n_frames=proxy_frames),
         frame_ms=frame_ms,
         faces_frames=faces_frames,
         faces_boxes=faces_boxes,
