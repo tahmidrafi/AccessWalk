@@ -153,6 +153,9 @@ def system_prompt(rules: Rules) -> str:
         "frame_index where that track has a box. Say 'likely barrier' and 'verify on site', never "
         "'violation' or 'non-compliant'. Heights, slopes and widths judged from video are estimates. "
         "Check the pitfalls before citing. If nothing qualifies for a check, cite nothing for it. "
+        "In titles and evidence notes, name the object and where it is in the scene (e.g. 'the slab "
+        "beside the tree trunk'); never mention box colours, box labels or 'the box': the report draws "
+        "its own overlay, so the colours you see in view_frame mean nothing to the reader. "
         "When done, call finish.",
         "Checks:",
     ]

@@ -32,6 +32,30 @@ BANNED = re.compile(
     r"\b(violat\w*|non-?complian\w*|illegal|unlawful|out of compliance|ada compliant)\b", re.I
 )
 
+# The agent sees view_frame's coloured boxes; the report draws its own overlay, so a
+# note like "the slab in the red box" points at nothing. Strip such references.
+_COLOR = r"(?:red|green|blue|orange|yellow|cyan|magenta|purple|pink|white|black|grey|gray)"
+_SHAPE = r"(?:box(?:es)?|rectangles?|outlines?|bounding boxes|highlights?|markers?)"
+_BOX_REFS = [
+    # " in the red box", " (inside the green rectangle)", " shown in the blue outline"
+    re.compile(rf"\s*\(?\b(?:shown\s+|marked\s+|seen\s+)?(?:in|inside|within|by|at|under)\s+the\s+"
+               rf"{_COLOR}(?:[- ]{_COLOR})?\s+{_SHAPE}\)?", re.I),
+    # " boxed in red", " outlined in yellow", " highlighted in green"
+    re.compile(rf"\s*\b(?:boxed|outlined|highlighted|marked)\s+in\s+{_COLOR}\b", re.I),
+    # "red-boxed slab" -> "slab"
+    re.compile(rf"\b{_COLOR}[- ](?:boxed|outlined|highlighted)\s+", re.I),
+]
+_BOX_SUBJECT = re.compile(rf"\bthe\s+{_COLOR}\s+{_SHAPE}\b", re.I)  # "the red box shows" -> "the marked area shows"
+
+
+def strip_box_colours(text: str) -> str:
+    """Remove references to box colours from model-written text."""
+    for pat in _BOX_REFS:
+        text = pat.sub("", text)
+    text = _BOX_SUBJECT.sub("the marked area", text)
+    text = re.sub(r"\s+([,.;:)])", r"\1", text)
+    return re.sub(r"\s{2,}", " ", text).strip()
+
 
 class CitationRequest(BaseModel):
     """Arguments of the agent's ``cite_finding`` tool call."""
@@ -62,6 +86,11 @@ def validate_citation(
         req = CitationRequest.model_validate(raw)
     except ValidationError as e:
         return Rejection(request=raw, reason=f"bad arguments: {e.errors()[0]['loc']}: {e.errors()[0]['msg']}")
+    req = req.model_copy(update={"title": strip_box_colours(req.title),
+                                 "evidence_note": strip_box_colours(req.evidence_note)})
+    if len(req.evidence_note) < 20:
+        return Rejection(request=raw, reason="evidence_note is too short once box colours are removed: "
+                                             "describe the object and where it is")
 
     rule = rules.checks.get(req.check_id)  # type: ignore[call-overload]
     if rule is None:

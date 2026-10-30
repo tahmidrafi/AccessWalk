@@ -77,3 +77,37 @@ def test_finalize_merges_and_numbers_in_time_order():
                                severity="low"), inv, m, rules)
     out = finalize([c, a, b])
     assert [(f.finding_id, f.frame_index) for f in out] == [("f1", 13), ("f2", 20)]
+
+
+def test_box_colours_stripped_from_notes():
+    from accesswalk.validator import strip_box_colours
+    cases = {
+        # from the clip-1 run, Oct 29
+        "In frame 54 the foreground slab in the red box is cracked diagonally and tilted.":
+            "In frame 54 the foreground slab is cracked diagonally and tilted.",
+        "The slab (inside the green rectangle) is lifted.": "The slab is lifted.",
+        "Bin outlined in yellow, on the left half.": "Bin, on the left half.",
+        "The red-boxed slab is broken.": "The slab is broken.",
+        "The red box shows a heaved slab.": "the marked area shows a heaved slab.",
+        "Slab beside the tree trunk is lifted.": "Slab beside the tree trunk is lifted.",  # untouched
+    }
+    for raw, want in cases.items():
+        assert strip_box_colours(raw) == want, raw
+
+
+def test_validator_strips_box_colours_and_rejects_empty_notes():
+    m, inv = _inv()
+    rules = load_rules()
+    f = validate_citation(_req(title="Heaved slab in the red box",
+                               evidence_note="In frame 12 the slab in the red box is lifted well above "
+                                             "its neighbour."), inv, m, rules)
+    assert not isinstance(f, Rejection)
+    assert "red" not in f.title and "red" not in f.evidence_note
+    assert f.evidence_note == "In frame 12 the slab is lifted well above its neighbour."
+    r = validate_citation(_req(evidence_note="Lip in the red box (in the blue box)."), inv, m, rules)
+    assert isinstance(r, Rejection) and "too short" in r.reason
+
+
+def test_prompt_forbids_box_colours():
+    from accesswalk.agent import system_prompt
+    assert "never mention box colours" in system_prompt(load_rules())
