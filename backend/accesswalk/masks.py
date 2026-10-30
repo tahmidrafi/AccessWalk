@@ -15,6 +15,7 @@ pixels below the contact point, since the contact sits on the object/ground edge
 from __future__ import annotations
 
 import hashlib
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -29,8 +30,7 @@ def decode_raster(mask: MaskToken, cache_dir: Path | None = None) -> np.ndarray:
     """(H, W) uint8 raster of 0/1 for one mask token. Decoding is slow for large
     masks (a 1024x574 sidewalk mask takes ~5 s), so with ``cache_dir`` each decoded
     raster is kept as a bit-packed .npy keyed by the payload hash."""
-    key = hashlib.sha1(f"{mask.encoding}{mask.width}x{mask.height}{mask.data}".encode()).hexdigest()[:20]
-    path = Path(cache_dir) / f"{key}.npy" if cache_dir else None
+    path = _raster_path(mask, cache_dir) if cache_dir else None
     if path is not None and path.exists():
         bits = np.load(path)
         return np.unpackbits(bits)[: mask.height * mask.width].reshape(mask.height, mask.width)
@@ -39,6 +39,29 @@ def decode_raster(mask: MaskToken, cache_dir: Path | None = None) -> np.ndarray:
         path.parent.mkdir(parents=True, exist_ok=True)
         np.save(path, np.packbits(raster))
     return raster
+
+
+def _raster_path(mask: MaskToken, cache_dir: Path) -> Path:
+    key = hashlib.sha1(f"{mask.encoding}{mask.width}x{mask.height}{mask.data}".encode()).hexdigest()[:20]
+    return Path(cache_dir) / f"{key}.npy"
+
+
+def _predecode_one(args: tuple[MaskToken, Path]) -> None:
+    decode_raster(*args)
+
+
+def predecode(tokens: list[MaskToken], cache_dir: Path, workers: int = 0) -> int:
+    """Decode masks into ``cache_dir`` ahead of time, so ``decode_raster`` later only
+    reads them back. Returns how many were decoded; already-cached ones are skipped."""
+    todo = {_raster_path(t, cache_dir): t for t in tokens}
+    jobs = [(t, cache_dir) for p, t in todo.items() if not p.exists()]
+    if workers > 1 and len(jobs) > 1:
+        with ProcessPoolExecutor(workers) as pool:
+            list(pool.map(_predecode_one, jobs, chunksize=4))
+    else:
+        for job in jobs:
+            _predecode_one(job)
+    return len(jobs)
 
 
 def _decode(mask: MaskToken) -> np.ndarray:

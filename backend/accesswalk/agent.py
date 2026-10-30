@@ -29,7 +29,7 @@ import cv2
 
 from . import cache, llm, masks, usage
 from .ingest import DEFAULT_OUT_ROOT, IngestMeta, ingest
-from .inventory import Inventory, build_tracks, phrase_slug, render_frames, stitch_ids
+from .inventory import Inventory, build_tracks, phrase_slug, render_frames, sampled_boxes, stitch_ids
 from .phrases import PLATE_PHRASE, SAM_PHRASES
 from .rules import Rules, load_rules
 from .sam_parse import SamRecord, parse_output
@@ -45,7 +45,6 @@ MAX_VIEWS = 12
 # so only the latest MAX_IMAGES views travel as images; older ones stay as their captions.
 MAX_IMAGES = 8
 VIEW_WIDTH = 512  # ~1.1k input tokens per image (smoke test, Oct 29)
-SAMPLE_BOXES = 8
 PARAMS = {"temperature": 0, "max_tokens": 8000, "parallel_tool_calls": True}
 
 
@@ -206,10 +205,7 @@ def tool_get_track(ctx: AgentContext, track_id: str) -> dict:
     t = _track(ctx, track_id)
     if t is None:
         return {"error": f"unknown track_id {track_id!r}"}
-    step = max(1, len(t.boxes) // SAMPLE_BOXES)
-    sample = t.boxes[::step][:SAMPLE_BOXES]
-    if t.keyframe_index not in {b.frame_index for b in sample}:
-        sample.append(next(b for b in t.boxes if b.frame_index == t.keyframe_index))
+    sample = sampled_boxes(t)
     recs = _records_of(ctx, t)
     walks: dict[int, list[SamRecord]] = {}
     for r in ctx.records.get("sidewalk", []):

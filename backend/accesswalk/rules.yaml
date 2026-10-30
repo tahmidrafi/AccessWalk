@@ -21,7 +21,7 @@ checks:
   sidewalk_obstruction:
     title: Sidewalk obstruction
     question: Does an object stand ON the walking surface and block part of its width?
-    evidence_phrases: [trash bin, car, pole]
+    evidence_phrases: [trash bin, car, pole, construction barrier, traffic barrel]
     judged_from: track
     verify_manually: always
     severity:

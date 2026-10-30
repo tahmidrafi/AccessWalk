@@ -43,6 +43,8 @@ from pydantic import BaseModel
 # changes don't move frames: re-ingest with --force; the new sam.mp4 hash
 # (IngestMeta.sam_sha256, also in the key) then makes SAM see a new input.
 INGEST_VERSION = 1
+PROXY_NOPLATE = "proxy_noplate.mp4"  # plates.py: face-blurred proxy before plate blur; never served
+PROXY_PLATES_JSON = "proxy_plates.json"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MODEL = REPO_ROOT / "models" / "face_detection_yunet_2023mar.onnx"
@@ -516,6 +518,8 @@ def ingest(
             return cached
         # stale ingest: params changed since this clip was processed -> re-ingest
     out_dir.mkdir(parents=True, exist_ok=True)
+    for stale in (PROXY_NOPLATE, PROXY_PLATES_JSON):  # the plate blur restarts from the new proxy
+        (out_dir / stale).unlink(missing_ok=True)
 
     src = probe_source(raw)
     detector = make_detector(model, (src.display_width, src.display_height))

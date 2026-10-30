@@ -14,6 +14,9 @@ Steps (``build_inventory``):
   4. evidence frames: each kept track's keyframe is rendered from the
      face-blurred ``sam.mp4`` to ``frames/<i>.jpg`` with license plates (SAM
      ``license plate`` tracks) blurred too, since report frames are published.
+  5. proxy: plates are blurred into the published ``proxy.mp4`` (:mod:`plates`).
+  6. masks: every mask ``get_track`` will read is decoded here, in parallel, so the
+     agent's review stage never waits on a ~5 s sidewalk mask decode.
 
 Keyframe choice: the frame where the object is most confidently seen, tie-broken
 by box area (bigger = closer to the camera = more legible evidence), ignoring
@@ -21,6 +24,7 @@ boxes clipped by the frame edge when an unclipped one exists.
 """
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -28,11 +32,14 @@ import cv2
 import numpy as np
 from pydantic import BaseModel
 
-from . import masks
+from . import masks, plates
 from .ingest import DEFAULT_OUT_ROOT, IngestMeta
 from .phrases import PLATE_PHRASE
-from .sam_parse import SamRecord, to_tracks
+from .sam_parse import MaskToken, SamRecord, to_tracks
 from .schemas import BBox, Track, TrackBox
+
+SIDEWALK_PHRASE = "sidewalk"
+SAMPLE_BOXES = 8  # boxes per track shown to the agent by get_track
 
 
 def phrase_slug(phrase: str) -> str:
@@ -199,12 +206,40 @@ def render_masks(
             continue
         name = f"{t.track_id}_f{t.keyframe_index}.png"
         path = clip_dir / "masks" / name
-        if not path.exists():
-            raster = masks.decode_raster(rec.mask, clip_dir / "masks")
-            path.parent.mkdir(parents=True, exist_ok=True)
-            cv2.imwrite(str(path), mask_png(rec, raster))
+        raster = masks.decode_raster(rec.mask, clip_dir / "masks")  # new SAM output can reuse a name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(path), mask_png(rec, raster))
         urls[t.track_id] = f"/media/{meta.video_sha256}/masks/{name}"
     return urls
+
+
+def sampled_boxes(t: Track) -> list[TrackBox]:
+    """The boxes ``get_track`` reports: evenly spaced, plus the keyframe."""
+    step = max(1, len(t.boxes) // SAMPLE_BOXES)
+    sample = t.boxes[::step][:SAMPLE_BOXES]
+    if t.keyframe_index not in {b.frame_index for b in sample}:
+        sample.append(next(b for b in t.boxes if b.frame_index == t.keyframe_index))
+    return sample
+
+
+def review_masks(tracks: list[Track], records_by_phrase: dict[str, list[SamRecord]]) -> list[MaskToken]:
+    """Every mask ``get_track`` can ask for: each sampled box of a non-sidewalk
+    track, plus the sidewalk masks on the same frame."""
+    walks: dict[int, list[MaskToken]] = {}
+    for r in records_by_phrase.get(SIDEWALK_PHRASE, []):
+        if r.mask:
+            walks.setdefault(r.frame_index, []).append(r.mask)
+    out: list[MaskToken] = []
+    for t in tracks:
+        if t.phrase == SIDEWALK_PHRASE:
+            continue
+        recs = {r.frame_index: r for r in records_by_phrase.get(t.phrase, []) if r.object_id == t.object_id}
+        for b in sampled_boxes(t):
+            rec = recs.get(b.frame_index)
+            if rec is not None and rec.mask is not None:
+                out.append(rec.mask)
+                out.extend(walks.get(b.frame_index, []))
+    return out
 
 
 class Inventory(BaseModel):
@@ -238,5 +273,11 @@ def build_inventory(
         mask_urls = render_masks(meta, inv.kept(), stitched, out_root)
         for t in inv.tracks:
             t.mask_url = mask_urls.get(t.track_id)
+        plates.blur_proxy(meta, plate_tracks, out_root)
+        try:
+            masks.predecode(review_masks(inv.tracks, stitched), Path(out_root) / meta.video_sha256 / "masks",
+                            workers=max(1, (os.cpu_count() or 2) - 1))
+        except RuntimeError:  # decoder missing: get_track says so; not worth failing the job
+            pass
         (Path(out_root) / meta.video_sha256 / "inventory.json").write_text(inv.model_dump_json(indent=2))
     return inv

@@ -67,3 +67,29 @@ def test_mask_png_is_full_frame_with_transparent_background():
     assert img.shape == (1280, 720, 4)               # sam.mp4 size, BGRA
     assert img[:, :, 3].sum() == 9 * 255              # only the 3x3 object is opaque
     assert tuple(img[22, 12]) == (255, 255, 255, 255) and img[20, 10, 3] == 0
+
+
+def test_review_masks_cover_get_track_samples_and_predecode_skips_cached(tmp_path, monkeypatch):
+    import numpy as np
+    from accesswalk import masks
+    from accesswalk.inventory import review_masks
+    from accesswalk.sam_parse import MaskToken
+
+    m = _meta()
+    def tok(s):
+        return MaskToken(encoding="one_bit", width=2, height=1, data=s)
+    obj = [_rec(f, 0, 0, 0, 10, 10).model_copy(update={"mask": tok(f"o{f}")}) for f in range(3)]
+    walk = _rec(1, 0, 0, 0, 10, 10).model_copy(update={"mask": tok("w1")})
+    other = _rec(30, 0, 0, 0, 10, 10).model_copy(update={"mask": tok("w30")})
+    records = {"trash bin": obj, "sidewalk": [walk, other]}
+    tracks = build_tracks("trash bin", obj, m) + build_tracks("sidewalk", [walk, other], m)
+    tokens = review_masks(tracks, records)
+    assert {t.data for t in tokens} == {"o0", "o1", "o2", "w1"}  # no sidewalk mask off the sampled frames
+
+    calls = []
+    monkeypatch.setattr(masks, "_decode", lambda t: calls.append(t.data) or np.zeros((1, 2), "uint8"))
+    assert masks.predecode(tokens, tmp_path) == 4
+    assert masks.predecode(tokens, tmp_path) == 0
+    calls.clear()
+    masks.decode_raster(tokens[0], tmp_path)
+    assert calls == []  # review reads it back, no decode

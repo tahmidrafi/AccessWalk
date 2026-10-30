@@ -33,7 +33,8 @@ def test_rules_cover_all_checks_and_phrase_list_unchanged():
     assert sorted(SAM_PHRASES) == sorted([
         "trash bin", "car", "pole", "raised sidewalk slab", "curb", "tactile paving", "sidewalk",
         "stairs", "handrail", "doorknob", "overgrown vegetation", "license plate",
-    ])  # the cached d4 batch; changing this list means new SAM spend
+        "construction barrier", "traffic barrel",
+    ])  # changing this list means new SAM spend
 
 
 def test_valid_citation_copies_sam_box_and_rule_fields():

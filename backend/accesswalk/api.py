@@ -2,8 +2,8 @@
 
 Run:  micromamba run -n accesswalk uvicorn accesswalk.api:app --app-dir backend --port 8000
 
-Media: only blurred derived files are served -- ``proxy.mp4`` (faces blurred;
-plates not yet, d6-plateblur-proxy blocks deploy), rendered ``frames/<i>.jpg``
+Media: only blurred derived files are served -- ``proxy.mp4`` (faces and
+plates blurred), rendered ``frames/<i>.jpg``
 (faces + plates blurred) and ``masks/<name>.png``. Paths are matched against a
 fixed pattern, so nothing else under data/ (raw uploads with GPS, caches) is
 reachable. Raw uploads go to data/raw/uploads/ and are never served.
