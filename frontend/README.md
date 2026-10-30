@@ -61,6 +61,30 @@ write a tagged PDF: headings become the outline ("Route verdict: ...",
 keeps its header cells. Checked with headless Chrome `--print-to-pdf` (4 pages
 for the mock).
 
+## Upload and job status
+
+Routes: `/` upload, `/jobs/<job_id>` status, `/reports/<report_id>` report (History
+API paths, so a report keeps its `#finding-...` links; a static host needs an SPA
+fallback to index.html). The UI talks to the API through `src/api/client.ts`,
+against `src/schema/api.schema.json` (types: `npm run gen:types`).
+
+For now the only client is the mock (`src/api/mockClient.ts`): nothing is
+uploaded or fetched. It checks the file on the device (type, size, duration
+from the file's metadata), simulates the upload, and plays a job out from the
+mocks in `src/mock/api/` (queued, then ingest, segment, inventory, review,
+report, done in about 20 s; polled every 2 s as the contract asks). "Demo
+outcome" on the upload page picks the ending: report ready, over budget (stops
+after ingest, nothing charged), pipeline error (during review), or an upload
+rejected with 400 or 413. A finished job links to its report via `report_url`.
+
+Accessibility: errors are announced (`role="alert"`) and focused, with the
+server message plus what to do next; field errors sit on the field
+(`aria-invalid`, `aria-describedby`). Focus moves to the new page's heading
+after in-app navigation, to "Cancel upload" while uploading, and to the outcome
+when a watched job ends. The status line is a polite live region that changes
+only with the stage, not on every poll. Lighthouse accessibility 100 on the
+upload page, a finished job, an over-budget job and the report (Oct 29).
+
 ## Accessibility
 
 Landmarks and a skip link; one `h1`, an `h2` per section, an `h3` per finding.
