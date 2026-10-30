@@ -45,7 +45,8 @@ _BOX_REFS = [
     # "red-boxed slab" -> "slab"
     re.compile(rf"\b{_COLOR}[- ](?:boxed|outlined|highlighted)\s+", re.I),
 ]
-_BOX_SUBJECT = re.compile(rf"\bthe\s+{_COLOR}\s+{_SHAPE}\b", re.I)  # "the red box shows" -> "the marked area shows"
+# "the red box shows" -> "the marked area shows"
+_BOX_SUBJECT = re.compile(rf"\bthe\s+{_COLOR}\s+{_SHAPE}\b", re.I)
 
 
 def strip_box_colours(text: str) -> str:
@@ -54,7 +55,8 @@ def strip_box_colours(text: str) -> str:
         text = pat.sub("", text)
     text = _BOX_SUBJECT.sub("the marked area", text)
     text = re.sub(r"\s+([,.;:)])", r"\1", text)
-    return re.sub(r"\s{2,}", " ", text).strip()
+    text = re.sub(r"\s{2,}", " ", text).strip()
+    return text[:1].upper() + text[1:]  # keep sentence case after a leading removal
 
 
 class CitationRequest(BaseModel):

@@ -88,7 +88,7 @@ def test_box_colours_stripped_from_notes():
         "The slab (inside the green rectangle) is lifted.": "The slab is lifted.",
         "Bin outlined in yellow, on the left half.": "Bin, on the left half.",
         "The red-boxed slab is broken.": "The slab is broken.",
-        "The red box shows a heaved slab.": "the marked area shows a heaved slab.",
+        "The red box shows a heaved slab.": "The marked area shows a heaved slab.",
         "Slab beside the tree trunk is lifted.": "Slab beside the tree trunk is lifted.",  # untouched
     }
     for raw, want in cases.items():
