@@ -103,3 +103,13 @@ def test_request_metadata_changes_key():
     noconf = {"mask_encoding": "one_bit", "include_confidence": "false"}
     assert cache.cache_key("sam-3.1", "x", conf, 1, 5.0, 720, 1280) != \
         cache.cache_key("sam-3.1", "x", noconf, 1, 5.0, 720, 1280)
+
+
+def test_sam_mp4_hash_changes_key_and_absent_hash_keeps_old_key():
+    # a blur-only re-ingest changes sam.mp4's pixels, not its timing: it must still be a new input
+    md = {"mask_encoding": "one_bit", "include_confidence": "true"}
+    old = cache.cache_key("sam-3.1", "x", md, 1, 5.0, 720, 1280)
+    assert cache.cache_key("sam-3.1", "x", md, 1, 5.0, 720, 1280, None) == old  # pre-hash ingests
+    a = cache.cache_key("sam-3.1", "x", md, 1, 5.0, 720, 1280, "aa" * 32)
+    b = cache.cache_key("sam-3.1", "x", md, 1, 5.0, 720, 1280, "bb" * 32)
+    assert len({old, a, b}) == 3

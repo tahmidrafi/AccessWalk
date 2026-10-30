@@ -5,7 +5,7 @@ box must be scaled back to full resolution, padded, and clipped before blurring.
 The test clip had zero faces, so this logic is otherwise unexercised -- and a bug
 here would leak faces in the public d4 clips."""
 import numpy as np
-from accesswalk.ingest import detections_to_boxes, plan_blur_boxes
+from accesswalk.ingest import detections_to_boxes, face_reject_reason, plan_blur_boxes, skin_fraction
 
 
 def _faces(*rows) -> np.ndarray:
@@ -68,3 +68,58 @@ def test_frame_sized_false_positive_dropped():
     # the clip-1 false positive: ~800x1200 "face" on a 1080-wide frame
     faces = _faces((20, 500, 800, 1200), (500, 300, 60, 70))
     assert detections_to_boxes(faces, inv=1.0, pad=0.0, w=1080, h=1920) == [(500, 300, 560, 370)]
+
+
+# --- plausibility filter (d6-blur-fp) ------------------------------------------
+W, H = 540, 960  # detect-scale portrait frame
+
+
+def _face(x, y, s, score=0.9, eye_frac=0.45, eye_y=0.4, nose_y=0.6, mouth_y=0.78, roll_px=0.0):
+    """A YuNet row for an s x s box at (x, y) with frontal landmarks."""
+    cx = x + s / 2
+    ex = eye_frac * s / 2
+    return np.array([x, y, s, s,
+                     cx - ex, y + eye_y * s - roll_px, cx + ex, y + eye_y * s + roll_px,
+                     cx, y + nose_y * s,
+                     cx - 0.2 * s, y + mouth_y * s, cx + 0.2 * s, y + mouth_y * s,
+                     score], dtype=np.float32)
+
+
+def test_small_boxes_are_always_blurred():
+    # the real campus passer-by: ~18 px at full res, low score, odd landmarks
+    assert face_reject_reason(_face(400, 50, 10, score=0.51, eye_frac=0.9), W, H, skin=0.0) is None
+
+
+def test_plausible_medium_face_is_kept():
+    assert face_reject_reason(_face(200, 200, 60, score=0.8), W, H, skin=0.9) is None
+
+
+def test_score_bar_rises_with_size():
+    assert face_reject_reason(_face(200, 200, 60, score=0.65), W, H, skin=0.9) == "score"
+    big = 0.2 * W  # a close face must be a confident detection
+    assert face_reject_reason(_face(100, 100, big, score=0.8), W, H, skin=0.9) == "score"
+    assert face_reject_reason(_face(100, 100, big, score=0.9), W, H, skin=0.9) is None
+
+
+def test_bad_landmarks_rejected():
+    # eyes squeezed together (a wheel hub), eyes at the top edge, nose below the mouth, tilted
+    for kw in [dict(eye_frac=0.1), dict(eye_y=0.05), dict(nose_y=0.85), dict(roll_px=40)]:
+        assert face_reject_reason(_face(200, 200, 60, score=0.8, **kw), W, H, skin=0.9) == "landmarks"
+
+
+def test_low_in_frame_rejected():
+    # a medium "face" on the pavement just ahead of the walker
+    assert face_reject_reason(_face(200, 0.85 * H, 60, score=0.8), W, H, skin=0.9) == "low_in_frame"
+
+
+def test_grey_surface_rejected_by_skin():
+    assert face_reject_reason(_face(200, 200, 60, score=0.8), W, H, skin=0.0) == "not_skin"
+    assert face_reject_reason(_face(200, 200, 60, score=0.8), W, H, skin=None) is None  # test skipped
+
+
+def test_skin_fraction_grey_vs_skin_tone():
+    f = _face(10, 10, 60)
+    grey = np.full((100, 100, 3), 128, np.uint8)
+    assert skin_fraction(grey, f) == 0.0
+    for bgr in [(150, 180, 230), (60, 90, 140)]:  # light and dark skin tones (BGR)
+        assert skin_fraction(np.full((100, 100, 3), bgr, np.uint8), f) == 1.0

@@ -1,9 +1,10 @@
 """Content-addressed cache for SAM requests + usage logging.
 
 A SAM response is cached by (raw video sha256, model, phrase, mask_encoding,
-ingest params). The ingest params are in the key because the frame indices in a
-response are indices into the re-encoded ``sam.mp4``: keying on the raw hash alone
-would hand back tracks that no longer line up after any ingest change.
+ingest params, sam.mp4 sha256). The ingest params are in the key because the frame
+indices in a response are indices into the re-encoded ``sam.mp4``: keying on the raw
+hash alone would hand back tracks that no longer line up after any ingest change.
+The sam.mp4 hash makes a re-ingest that only changes pixels (blur boxes) a new input.
 
 The raw response text and usage are written to the cache *before* parsing, so a
 parser bug can never force a second paid call. A stream that did not complete
@@ -40,17 +41,18 @@ class SegmentResult(BaseModel):
 def cache_key(
     model: str, phrase: str, request_metadata: dict,
     ingest_version: int, sam_fps: float, sam_w: int, sam_h: int,
+    sam_sha256: str | None = None,
 ) -> str:
     # Hash the whole request metadata dict (not just one field) so no future
     # request flag can silently collide with an old cache entry.
-    blob = json.dumps(
-        {
-            "schema": CACHE_SCHEMA, "model": model, "phrase": phrase,
-            "metadata": request_metadata, "ingest_version": ingest_version,
-            "sam_fps": sam_fps, "sam_w": sam_w, "sam_h": sam_h,
-        },
-        sort_keys=True,
-    )
+    fields = {
+        "schema": CACHE_SCHEMA, "model": model, "phrase": phrase,
+        "metadata": request_metadata, "ingest_version": ingest_version,
+        "sam_fps": sam_fps, "sam_w": sam_w, "sam_h": sam_h,
+    }
+    if sam_sha256 is not None:  # absent on older ingests: keep their keys valid
+        fields["sam_sha256"] = sam_sha256
+    blob = json.dumps(fields, sort_keys=True)
     return hashlib.sha256(blob.encode()).hexdigest()[:16]
 
 
@@ -87,7 +89,7 @@ def segment_cached(
     }
     key = cache_key(
         model, phrase, request_metadata,
-        meta.ingest_version, meta.sam.fps, meta.sam.width, meta.sam.height,
+        meta.ingest_version, meta.sam.fps, meta.sam.width, meta.sam.height, meta.sam_sha256,
     )
     cpath = cache_path(out_root, meta.video_sha256, key)
     sam_mp4 = Path(out_root) / meta.video_sha256 / "sam.mp4"

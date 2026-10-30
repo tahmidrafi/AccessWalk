@@ -33,7 +33,7 @@ def main(phrase: str, mask_encoding: str = "one_bit", include_confidence: bool =
     }
     key = cache.cache_key(
         MODEL, phrase, request_metadata,
-        meta.ingest_version, meta.sam.fps, meta.sam.width, meta.sam.height,
+        meta.ingest_version, meta.sam.fps, meta.sam.width, meta.sam.height, meta.sam_sha256,
     )
     cpath = cache.cache_path(DEFAULT_OUT_ROOT, meta.video_sha256, key)
     if not cpath.exists():

@@ -10,7 +10,9 @@ Per CLAUDE.md "Ingest specifics". For each raw clip we produce, under
 
 Privacy, done locally, before anything leaves the machine:
   * faces are detected on every (autorotated) source frame with OpenCV YuNet
-    (pass 1), padded ~20%, held a few frames and bridged across detector gaps of
+    (pass 1), implausible boxes (wheels, rocks, pavement) are dropped
+    (``face_reject_reason``; small boxes are always kept), the rest are
+    padded ~20%, held a few frames and bridged across detector gaps of
     up to 1 s (``plan_blur_boxes``), then Gaussian-blurred (pass 2). Every
     derived video is encoded from the blurred frames, so no unblurred face is
     ever written to a derived file or uploaded.
@@ -38,7 +40,8 @@ from pydantic import BaseModel
 
 # Bumped whenever a change alters frame timing or geometry (fps, size, trimming);
 # part of the SAM cache key so frame indices never silently go stale. Blur-only
-# changes don't move frames: re-ingest the affected clips with --force instead.
+# changes don't move frames: re-ingest with --force; the new sam.mp4 hash
+# (IngestMeta.sam_sha256, also in the key) then makes SAM see a new input.
 INGEST_VERSION = 1
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -79,6 +82,11 @@ class IngestMeta(BaseModel):
     frame_ms: list[int]
     faces_frames: int  # number of source frames with >=1 detection
     faces_boxes: int  # total detection boxes blurred (before hold)
+    # sha256 of the encoded sam.mp4: part of the SAM cache key, so a re-ingest that
+    # changes the pixels (e.g. different blur boxes) is a new SAM input. None on
+    # clips ingested before this field existed (their cache keys stay as they were).
+    sam_sha256: str | None = None
+    faces_rejected: int = 0  # detections dropped by the plausibility filter
 
 
 # --------------------------------------------------------------------------- #
@@ -92,17 +100,25 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def _ffprobe_json(path: Path) -> dict:
-    out = subprocess.run(
-        [
-            "ffprobe", "-hide_banner", "-v", "error",
-            "-show_entries",
-            "format=duration:stream=index,codec_type,width,height,avg_frame_rate",
-            "-of", "json", str(path),
-        ],
-        capture_output=True, text=True, check=True,
-    ).stdout
-    return json.loads(out)
+def _ffprobe_json(path: Path, attempts: int = 3) -> dict:
+    # Under heavy parallel load ffprobe occasionally returned malformed JSON here
+    # (twice in ~30 runs, never reproducible in isolation): retry before failing.
+    for i in range(attempts):
+        out = subprocess.run(
+            [
+                "ffprobe", "-hide_banner", "-v", "error",
+                "-show_entries",
+                "format=duration:stream=index,codec_type,width,height,avg_frame_rate",
+                "-of", "json", str(path),
+            ],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        try:
+            return json.loads(out)
+        except json.JSONDecodeError:
+            if i == attempts - 1:
+                raise
+    raise AssertionError("unreachable")
 
 
 def _video_rotation(path: Path) -> int:
@@ -166,6 +182,68 @@ def _scaled_dims(disp_w: int, disp_h: int, short_side: int) -> tuple[int, int]:
 # face blur
 # --------------------------------------------------------------------------- #
 DETECT_LONG_SIDE = 960  # run YuNet on a frame no larger than this; scale boxes back up
+DETECT_SCORE = 0.5
+
+
+def make_detector(model: str | Path, size: tuple[int, int]) -> cv2.FaceDetectorYN:
+    # Over-blur rather than miss a face: far below the default 0.9. At 0.6 a passer-by on
+    # the Oct-27 campus clip scored 0.60-0.76 and dropped out for up to 19 frames.
+    return cv2.FaceDetectorYN.create(
+        str(model), "", size, score_threshold=DETECT_SCORE, nms_threshold=0.3, top_k=5000,
+    )
+
+
+# Plausibility filter (d6-blur-fp). At the low score threshold YuNet fires on car
+# wheels, rock beds, barrels, spray paint and whole stretches of pavement, scoring
+# up to 0.83 with face-like landmarks; blurring those erases the evidence we film
+# for. Audit of all 13 Oct-27/29 clips with detections (scripts/face_audit.py):
+# every real face was <= 26 px wide (a passer-by at 15-26 px, 0.51-0.76), every box
+# >= 43 px was a false positive. So small boxes are always blurred (cheap, and
+# where real distant faces are); a bigger box must look like a face to be blurred.
+SMALL_FACE_FRAC = 0.04  # of frame width: below this, always blur
+LARGE_FACE_FRAC = 0.15  # at or above this, a close face: demand a high score
+MEDIUM_MIN_SCORE = 0.7
+LARGE_MIN_SCORE = 0.85
+LOW_IN_FRAME = 0.75  # box centre below this fraction of the height = the ground ahead
+MIN_SKIN = 0.2  # share of the inner face region with skin chroma
+
+
+def skin_fraction(frame: np.ndarray, f) -> float:
+    """Share of the inner face region (between eyes and chin) whose YCrCb chroma is
+    in the skin range (Cr 135-180, Cb 85-135, which spans light to dark skin).
+    Grey wheels and pavement score ~0; real faces, but also rocks and leaves, ~1."""
+    x, y, bw, bh = f[:4]
+    roi = frame[max(0, int(y + 0.25 * bh)):int(y + 0.85 * bh), max(0, int(x + 0.2 * bw)):int(x + 0.8 * bw)]
+    if roi.size == 0:
+        return 0.0
+    ycc = cv2.cvtColor(roi, cv2.COLOR_BGR2YCrCb)
+    cr, cb = ycc[..., 1], ycc[..., 2]
+    return float(((cr >= 135) & (cr <= 180) & (cb >= 85) & (cb <= 135)).mean())
+
+
+def face_reject_reason(f, w: int, h: int, skin: float | None = None) -> str | None:
+    """Why a YuNet detection ``f`` (x, y, w, h, 5 landmarks, score; in a frame of
+    ``w`` x ``h``) is not a plausible face, or None to blur it. ``skin`` is
+    ``skin_fraction`` of the box (None skips that test). Pure, so it is unit-tested."""
+    x, y, bw, bh = (float(v) for v in f[:4])
+    score = float(f[14])
+    if bw < SMALL_FACE_FRAC * w:
+        return None
+    lm = np.asarray(f[4:14], float).reshape(5, 2)  # r eye, l eye, nose, r mouth, l mouth
+    eye_y = (lm[0, 1] + lm[1, 1]) / 2
+    mouth_y = (lm[3, 1] + lm[4, 1]) / 2
+    eye_dist = float(np.hypot(*(lm[1] - lm[0])))
+    roll = abs(np.degrees(np.arctan2(lm[1, 1] - lm[0, 1], lm[1, 0] - lm[0, 0])))
+    if score < (LARGE_MIN_SCORE if bw >= LARGE_FACE_FRAC * w else MEDIUM_MIN_SCORE):
+        return "score"
+    if not (0.25 <= eye_dist / bw <= 0.7 and 0.15 <= (eye_y - y) / bh <= 0.6
+            and eye_y < lm[2, 1] < mouth_y <= y + 0.95 * bh and roll <= 35):
+        return "landmarks"
+    if y + bh / 2 > LOW_IN_FRAME * h:
+        return "low_in_frame"
+    if skin is not None and skin < MIN_SKIN:
+        return "not_skin"
+    return None
 
 
 def detections_to_boxes(
@@ -261,21 +339,26 @@ def _decode(raw: Path, w: int, h: int):
 
 def _detect_faces(
     raw: Path, src: SourceMeta, detector: cv2.FaceDetectorYN, pad: float
-) -> tuple[dict[int, list[Box]], int]:
-    """Pass 1: detect on a downscaled decode (``DETECT_LONG_SIDE``); boxes are
-    scaled back to full resolution and padded. Returns (detections, n_frames)."""
+) -> tuple[dict[int, list[Box]], int, int]:
+    """Pass 1: detect on a downscaled decode (``DETECT_LONG_SIDE``), drop implausible
+    faces (``face_reject_reason``); kept boxes are scaled back to full resolution and
+    padded. Returns (detections, n_frames, n_rejected)."""
     w, h = src.display_width, src.display_height
     det_scale = min(1.0, DETECT_LONG_SIDE / max(w, h))
     dw = (round(w * det_scale)) & ~1
     dh = (round(h * det_scale)) & ~1
     detector.setInputSize((dw, dh))
     dets: dict[int, list[Box]] = {}
-    n = 0
+    n = rejected = 0
     for n, small in enumerate(_decode(raw, dw, dh), start=1):
         _, faces = detector.detect(small)
-        if faces is not None and len(faces):
-            dets[n - 1] = detections_to_boxes(faces, w / dw, pad, w, h)
-    return dets, n
+        if faces is None or not len(faces):
+            continue
+        keep = [f for f in faces if face_reject_reason(f, dw, dh, skin_fraction(small, f)) is None]
+        rejected += len(faces) - len(keep)
+        if keep:
+            dets[n - 1] = detections_to_boxes(np.array(keep), w / dw, pad, w, h)
+    return dets, n, rejected
 
 
 def _blur_faces_stream(
@@ -308,10 +391,10 @@ def _encode_from_blurred(
     hold: int,
     max_gap: int,
     stderr_log: Path,
-) -> tuple[int, int, int]:
+) -> tuple[int, int, int, int]:
     """Single ffmpeg consumer: blurred BGR frames on stdin -> proxy.mp4 + sam.mp4.
     Audio is pulled from the raw file (input 1). Returns (proxy frames, face counts...)."""
-    dets, n_src = _detect_faces(raw, src, detector, pad)
+    dets, n_src, rejected = _detect_faces(raw, src, detector, pad)
     plan = plan_blur_boxes(dets, n_src, hold, max_gap)
     w, h = src.display_width, src.display_height
     sw, sh = _scaled_dims(w, h, SHORT_SIDE)
@@ -354,7 +437,8 @@ def _encode_from_blurred(
             f"ffmpeg encode failed (exit {ret}); see {stderr_log}:\n"
             + stderr_log.read_text(errors="replace")[-2000:]
         )
-    return n_written, sum(1 for b in dets.values() if b), sum(len(b) for b in dets.values())
+    return (n_written, sum(1 for b in dets.values() if b), sum(len(b) for b in dets.values()),
+            rejected)
 
 
 def _extract_audio(raw: Path, out_dir: Path, has_audio: bool) -> None:
@@ -434,13 +518,8 @@ def ingest(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     src = probe_source(raw)
-    # Over-blur rather than miss a face: far below the default 0.9. At 0.6 a passer-by on
-    # the Oct-27 campus clip scored 0.60-0.76 and dropped out for up to 19 frames.
-    detector = cv2.FaceDetectorYN.create(
-        str(model), "", (src.display_width, src.display_height),
-        score_threshold=0.5, nms_threshold=0.3, top_k=5000,
-    )
-    proxy_frames, faces_frames, faces_boxes = _encode_from_blurred(
+    detector = make_detector(model, (src.display_width, src.display_height))
+    proxy_frames, faces_frames, faces_boxes, faces_rejected = _encode_from_blurred(
         raw, src, out_dir, detector, pad, hold, max_gap, out_dir / "ffmpeg.stderr.log"
     )
     _extract_audio(raw, out_dir, src.has_audio)
@@ -458,6 +537,8 @@ def ingest(
         frame_ms=frame_ms,
         faces_frames=faces_frames,
         faces_boxes=faces_boxes,
+        faces_rejected=faces_rejected,
+        sam_sha256=sha256_file(sam_mp4),
     )
     meta_path.write_text(meta.model_dump_json(indent=2))
     (out_dir / "ffmpeg.stderr.log").unlink(missing_ok=True)
