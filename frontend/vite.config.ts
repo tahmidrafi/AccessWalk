@@ -54,8 +54,16 @@ function devMedia(mediaRoot: string): Plugin {
 }
 
 // https://vite.dev/config/
+// With ACCESSWALK_API_PROXY (e.g. http://127.0.0.1:8010) the dev server forwards
+// /api and /media to a running backend instead, so the page and API share an
+// origin (no CORS); pair it with VITE_ACCESSWALK_API=http.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, import.meta.dirname, 'ACCESSWALK_')
+  const apiProxy = env.ACCESSWALK_API_PROXY
+  if (apiProxy) {
+    const target = { target: apiProxy, changeOrigin: true }
+    return { plugins: [react()], server: { proxy: { '/api': target, '/media': target } } }
+  }
   const mediaRoot = env.ACCESSWALK_MEDIA_DIR || path.resolve(import.meta.dirname, '../data/cache')
   return { plugins: [react(), devMedia(mediaRoot)] }
 })

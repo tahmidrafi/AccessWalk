@@ -1,4 +1,4 @@
-import type { JobError, JobStatus, ReportList } from '../types/api'
+import type { Health, JobError, JobStatus, ReportList } from '../types/api'
 import type { Report } from '../types/report'
 
 /** An error response from the API (``ErrorResponse``), with its HTTP status. */
@@ -20,10 +20,12 @@ export interface MockScenario {
 }
 
 /**
- * The HTTP API (backend/accesswalk/api_models.py) as the UI uses it. The mock
- * client implements it now; a fetch/XHR client drops in for d7-deploy.
+ * The HTTP API (backend/accesswalk/api_models.py) as the UI uses it:
+ * httpClient.ts (fetch) or mockClient.ts, chosen in api/index.ts.
  */
 export interface ApiClient {
+  /** GET /api/health: which models serve the analysis. */
+  health(): Promise<Health>
   /** POST /api/jobs (multipart: video, title). Rejects with ApiError on 400/413/415. */
   createJob(
     video: File,

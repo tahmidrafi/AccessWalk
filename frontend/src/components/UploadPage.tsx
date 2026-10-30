@@ -3,7 +3,7 @@ import { ApiError, type ApiClient } from '../api/client'
 import { ERROR_HELP, MAX_DURATION_S, asSentence, MAX_UPLOAD_MB, readDurationS, reportPagePath, validateVideo } from '../lib/jobs'
 import { RATING_TEXT } from '../lib/labels'
 import { navigate, usePageEntry } from '../lib/router'
-import type { JobError, ReportSummary } from '../types/api'
+import type { Health, JobError, ReportSummary } from '../types/api'
 import { Link } from './Link'
 
 export function UploadPage({ api }: { api: ApiClient }) {
@@ -18,6 +18,7 @@ export function UploadPage({ api }: { api: ApiClient }) {
   const [announcement, setAnnouncement] = useState('')
   const [scenario, setScenario] = useState(() => api.mock?.scenario() ?? '')
   const [recent, setRecent] = useState<ReportSummary[] | null>(null)
+  const [health, setHealth] = useState<Health | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const alertRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -28,6 +29,10 @@ export function UploadPage({ api }: { api: ApiClient }) {
     api.listReports().then(
       (r) => live && setRecent(r.reports),
       () => live && setRecent([]),
+    )
+    api.health().then(
+      (h) => live && setHealth(h),
+      () => live && setHealth(null),
     )
     return () => {
       live = false
@@ -227,6 +232,13 @@ export function UploadPage({ api }: { api: ApiClient }) {
           </ul>
         )}
       </section>
+
+      {health && (
+        <p className="provenance muted">
+          Analysis runs on {health.agent_model} via {health.agent_provider} (open-weight review agent) and{' '}
+          {health.sam_model} (object tracking).
+        </p>
+      )}
     </>
   )
 }

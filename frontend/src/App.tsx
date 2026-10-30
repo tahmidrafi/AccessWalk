@@ -1,13 +1,10 @@
 import { useRef } from 'react'
-import { createMockClient } from './api/mockClient'
+import { api } from './api'
 import { JobPage } from './components/JobPage'
 import { Link } from './components/Link'
 import { ReportRoute } from './components/ReportRoute'
 import { UploadPage } from './components/UploadPage'
 import { matchRoute, usePageEntry, usePathname } from './lib/router'
-
-// Mock API only for now (d6-fewire); the HTTP client replaces it at deploy.
-const api = createMockClient()
 
 function NotFoundPage() {
   const headingRef = useRef<HTMLHeadingElement>(null)

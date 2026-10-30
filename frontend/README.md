@@ -68,8 +68,23 @@ API paths, so a report keeps its `#finding-...` links; a static host needs an SP
 fallback to index.html). The UI talks to the API through `src/api/client.ts`,
 against `src/schema/api.schema.json` (types: `npm run gen:types`).
 
-For now the only client is the mock (`src/api/mockClient.ts`): nothing is
-uploaded or fetched. It checks the file on the device (type, size, duration
+Two clients, picked at build time in `src/api/index.ts`:
+
+- **Mock** (default): `src/api/mockClient.ts`. Nothing is uploaded or fetched.
+- **HTTP**: `src/api/httpClient.ts`, with `VITE_ACCESSWALK_API=http`. `fetch` for
+  reads, `XMLHttpRequest` for the upload (progress events). Error bodies become
+  `ApiError` with the API's code; network failures stay `TypeError` so pages
+  retry. `VITE_ACCESSWALK_API_BASE` sets the API origin when it differs from
+  the page's (report media URLs are then prefixed too).
+
+Against a local backend: start it from `backend/` with
+`micromamba run -n accesswalk uvicorn accesswalk.api:app --port 8010`, then
+`npm run dev:http` (mode file `.env.http`: HTTP client, dev server proxies `/api`
+and `/media` to 127.0.0.1:8010). `ACCESSWALK_LIVE_API=http://127.0.0.1:8010 npm test`
+also runs `src/api.live.test.ts`: read-only routes only (health, report list,
+each report, its frames and a video byte range, a 404), no uploads.
+
+The mock checks the file on the device (type, size, duration
 from the file's metadata), simulates the upload, and plays a job out from the
 mocks in `src/mock/api/` (queued, then ingest, segment, inventory, review,
 report, done in about 20 s; polled every 2 s as the contract asks). "Demo
