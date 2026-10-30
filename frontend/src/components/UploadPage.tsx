@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ApiError, type ApiClient } from '../api/client'
-import { ERROR_HELP, MAX_DURATION_S, asSentence, MAX_UPLOAD_MB, readDurationS, reportPagePath, validateVideo } from '../lib/jobs'
+import {
+  ERROR_HELP,
+  MAX_DURATION_S,
+  MAX_UPLOAD_MB,
+  asSentence,
+  expectedProcessingText,
+  pickSampleReport,
+  readDurationS,
+  reportPagePath,
+  validateVideo,
+} from '../lib/jobs'
 import { RATING_TEXT } from '../lib/labels'
 import { navigate, usePageEntry } from '../lib/router'
 import type { Health, JobError, ReportSummary } from '../types/api'
@@ -19,6 +29,7 @@ export function UploadPage({ api }: { api: ApiClient }) {
   const [scenario, setScenario] = useState(() => api.mock?.scenario() ?? '')
   const [recent, setRecent] = useState<ReportSummary[] | null>(null)
   const [health, setHealth] = useState<Health | null>(null)
+  const [listFailed, setListFailed] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const alertRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -28,7 +39,7 @@ export function UploadPage({ api }: { api: ApiClient }) {
     let live = true
     api.listReports().then(
       (r) => live && setRecent(r.reports),
-      () => live && setRecent([]),
+      () => live && setListFailed(true),
     )
     api.health().then(
       (h) => live && setHealth(h),
@@ -89,6 +100,7 @@ export function UploadPage({ api }: { api: ApiClient }) {
   }
 
   const pct = Math.round((progress ?? 0) * 100)
+  const sample = recent && pickSampleReport(recent)
   const describedBy = ['video-hint', fieldError ? 'video-error' : null].filter(Boolean).join(' ')
 
   return (
@@ -104,10 +116,31 @@ export function UploadPage({ api }: { api: ApiClient }) {
         {api.mock && (
           <p className="notice">
             <strong>Demo mode.</strong> Nothing is uploaded: the page checks the file on your device and then plays
-            out a sample analysis.
+            out a shortened sample analysis.
           </p>
         )}
       </div>
+
+      {(recent === null || sample) && (
+        <section aria-labelledby="sample-heading" className="sample">
+          <h2 id="sample-heading">No video to hand?</h2>
+          {sample ? (
+            <>
+              <Link to={reportPagePath(sample.report_url)} className="button" aria-describedby="sample-hint">
+                Try a sample route
+              </Link>
+              <p id="sample-hint" className="hint">
+                Opens a finished report straight away, with {sample.n_findings} likely{' '}
+                {sample.n_findings === 1 ? 'barrier' : 'barriers'}. Nothing is uploaded.
+              </p>
+            </>
+          ) : listFailed ? (
+            <p className="hint">The sample route could not be loaded. Reload the page to try again.</p>
+          ) : (
+            <p className="hint">Looking for a sample route…</p>
+          )}
+        </section>
+      )}
 
       {uploadError && (
         <div className="alert" role="alert" tabIndex={-1} ref={alertRef} aria-labelledby="upload-error-title">
@@ -203,9 +236,14 @@ export function UploadPage({ api }: { api: ApiClient }) {
             </button>
           </div>
         ) : (
-          <button type="submit" className="primary">
-            Upload and analyse
-          </button>
+          <div className="upload-submit">
+            <button type="submit" className="primary" aria-describedby="upload-time">
+              Upload and analyse
+            </button>
+            <p id="upload-time" className="hint">
+              {expectedProcessingText()}
+            </p>
+          </div>
         )}
         <output className="visually-hidden">
           {announcement}
@@ -214,7 +252,9 @@ export function UploadPage({ api }: { api: ApiClient }) {
 
       <section aria-labelledby="recent-heading" className="recent">
         <h2 id="recent-heading">Recent reports</h2>
-        {recent === null ? (
+        {listFailed ? (
+          <p className="muted">The reports could not be loaded.</p>
+        ) : recent === null ? (
           <p className="muted">Loading…</p>
         ) : recent.length === 0 ? (
           <p className="muted">No reports yet.</p>
