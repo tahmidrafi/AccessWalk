@@ -118,9 +118,11 @@ class AgentContext:
     frame_loader: object = None  # (ctx, frame_index) -> BGR image; default _frame_image
 
 
-def load_context(clip_stem: str, out_root: Path = DEFAULT_OUT_ROOT) -> AgentContext:
-    """Meta + inventory + stitched SAM records for one clip, all from the local cache."""
-    meta = ingest(REPO_ROOT / "data" / "raw" / f"{clip_stem}.mp4")
+def load_context(clip_stem: str, out_root: Path = DEFAULT_OUT_ROOT,
+                 raw_path: Path | None = None) -> AgentContext:
+    """Meta + inventory + stitched SAM records for one clip, all from the local cache.
+    ``raw_path`` overrides data/raw/<clip_stem>.mp4 (API uploads live elsewhere)."""
+    meta = ingest(raw_path or REPO_ROOT / "data" / "raw" / f"{clip_stem}.mp4")
     inv = Inventory.model_validate_json((Path(out_root) / meta.video_sha256 / "inventory.json").read_text())
 
     def no_net(*_a, **_k):
