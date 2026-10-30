@@ -16,7 +16,13 @@ import { navigate, usePageEntry } from '../lib/router'
 import type { Health, JobError, ReportSummary } from '../types/api'
 import { Link } from './Link'
 
-export function UploadPage({ api }: { api: ApiClient }) {
+interface Props {
+  api: ApiClient
+  /** report_id behind "Try a sample route"; config wins, the mock has its own. */
+  sampleReportId?: string
+}
+
+export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_REPORT_ID || api.mock?.sampleReportId }: Props) {
   const headingRef = useRef<HTMLHeadingElement>(null)
   usePageEntry('New report - AccessWalk', headingRef)
 
@@ -100,7 +106,7 @@ export function UploadPage({ api }: { api: ApiClient }) {
   }
 
   const pct = Math.round((progress ?? 0) * 100)
-  const sample = recent && pickSampleReport(recent)
+  const sample = recent && sampleReportId ? pickSampleReport(recent, sampleReportId) : null
   const describedBy = ['video-hint', fieldError ? 'video-error' : null].filter(Boolean).join(' ')
 
   return (
@@ -121,7 +127,7 @@ export function UploadPage({ api }: { api: ApiClient }) {
         )}
       </div>
 
-      {(recent === null || sample) && (
+      {sampleReportId && (
         <section aria-labelledby="sample-heading" className="sample">
           <h2 id="sample-heading">No video to hand?</h2>
           {sample ? (
@@ -136,8 +142,10 @@ export function UploadPage({ api }: { api: ApiClient }) {
             </>
           ) : listFailed ? (
             <p className="hint">The sample route could not be loaded. Reload the page to try again.</p>
-          ) : (
+          ) : recent === null ? (
             <p className="hint">Looking for a sample route…</p>
+          ) : (
+            <p className="hint">The sample route is not available right now.</p>
           )}
         </section>
       )}

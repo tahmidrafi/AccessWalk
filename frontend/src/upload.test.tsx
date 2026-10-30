@@ -17,4 +17,10 @@ describe('upload page', () => {
     expect(html).toContain('No video to hand?')
     expect(html).toContain('Looking for a sample route')
   })
+
+  it('has no sample entry when no report is pinned and the API is real', () => {
+    const { mock: _mock, ...realApi } = createMockClient()
+    expect(renderToStaticMarkup(<UploadPage api={realApi} />)).not.toContain('No video to hand?')
+    expect(renderToStaticMarkup(<UploadPage api={realApi} sampleReportId="demo-route" />)).toContain('No video to hand?')
+  })
 })
