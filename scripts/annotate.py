@@ -30,15 +30,16 @@ def new(clip: str, annotator: str) -> int:
         "annotator": annotator,
         "status": "draft",
         "duration_s": duration,
-        "barriers": [
-            {"check": "surface_damage", "t": [0.0, 0.0], "sev": "medium", "note": "", "verify": False}
-        ],
-        "clean": [[0.0, 0.0]],
+        "barriers": [],
+        "clean": [],
         "not_applicable": [],
         "notes": "",
+        # Ignored by the loader; copy its shape into "barriers". Delete when done if you like.
+        "_example_barrier": {"check": "surface_damage", "t": [10.0, 12.5], "sev": "medium",
+                             "note": "what and where", "verify": False},
     }
     out.write_text(json.dumps(template, indent=2) + "\n", encoding="utf-8")
-    print(f"wrote {out.relative_to(REPO_ROOT)} ({duration:.1f} s); replace the placeholder rows")
+    print(f"wrote {out.relative_to(REPO_ROOT)} ({duration:.1f} s): blank draft")
     return 0
 
 

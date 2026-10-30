@@ -1,0 +1,20 @@
+{
+  "clip": "PXL_20261029_233317261",
+  "annotator": "tahmid",
+  "status": "draft",
+  "duration_s": 35.633,
+  "barriers": [],
+  "clean": [],
+  "not_applicable": [],
+  "notes": "",
+  "_example_barrier": {
+    "check": "surface_damage",
+    "t": [
+      10.0,
+      12.5
+    ],
+    "sev": "medium",
+    "note": "what and where",
+    "verify": false
+  }
+}
