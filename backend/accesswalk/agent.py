@@ -29,12 +29,22 @@ import cv2
 
 from . import cache, llm, masks, usage
 from .ingest import DEFAULT_OUT_ROOT, IngestMeta, ingest
-from .inventory import Inventory, build_tracks, phrase_slug, render_frames, sampled_boxes, stitch_ids
+from .inventory import (
+    OBSTRUCTION_CHECK,
+    Inventory,
+    build_tracks,
+    on_sidewalk_boxes,
+    phrase_slug,
+    render_frames,
+    sampled_boxes,
+    stitch_ids,
+)
 from .phrases import PLATE_PHRASE, SAM_PHRASES
 from .rules import Rules, load_rules
 from .sam_parse import SamRecord, parse_output
-from .schemas import CheckSummary, Finding, Report, RouteVerdict, RunInfo, Track, VideoInfo
+from .schemas import CheckSummary, Finding, Report, RunInfo, Track, VideoInfo
 from .validator import Rejection, finalize, validate_citation
+from .verdict import route_verdict
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RUN_LOG = REPO_ROOT / "data" / "out" / "agent_runs.jsonl"
@@ -60,9 +70,9 @@ def _fn(name: str, desc: str, props: dict, required: list[str]) -> dict:
 
 CHECK_ENUM = sorted(load_rules().checks)
 TOOLS = [
-    _fn("get_track", "Boxes of one tracked object over time, sampled, plus on_sidewalk: the share of "
-        "the object's ground-contact points (bottom of its mask) inside the sidewalk mask on that frame "
-        "(null = no sidewalk mask there).",
+    _fn("get_track", "Boxes of one tracked object over time, sampled. For sidewalk_obstruction objects a "
+        "few frames also have on_sidewalk: the share of the object's ground-contact points (bottom of "
+        "its mask) inside the sidewalk mask on that frame (null = no sidewalk mask there).",
         {"track_id": {"type": "string"}}, ["track_id"]),
     _fn("view_frame", "See one frame of the face- and plate-blurred video, with the boxes of up to 4 "
         f"tracks drawn and labelled. Use it to judge ramps, curb ramps, knob shapes and heights. At most "
@@ -206,6 +216,9 @@ def tool_get_track(ctx: AgentContext, track_id: str) -> dict:
     if t is None:
         return {"error": f"unknown track_id {track_id!r}"}
     sample = sampled_boxes(t)
+    obstruction = set(ctx.rules.checks[OBSTRUCTION_CHECK].evidence_phrases)
+    obstruction |= ctx.extra_phrases.get(OBSTRUCTION_CHECK, set())
+    measured = {b.frame_index for b in on_sidewalk_boxes(t, obstruction)}
     recs = _records_of(ctx, t)
     walks: dict[int, list[SamRecord]] = {}
     for r in ctx.records.get("sidewalk", []):
@@ -215,7 +228,7 @@ def tool_get_track(ctx: AgentContext, track_id: str) -> dict:
     for b in sorted(sample, key=lambda b: b.frame_index):
         row = {"frame_index": b.frame_index, "ms": b.frame_ms, "box": [b.x1, b.y1, b.x2, b.y2],
                "conf": b.conf}
-        if t.phrase != "sidewalk":
+        if b.frame_index in measured:
             rec = recs.get(b.frame_index)
             try:
                 if rec is not None and rec.mask is not None:
@@ -505,9 +518,6 @@ def build_report(ctx: AgentContext, findings: list[Finding], providers: list[str
                      n_findings=counts.get(cid, 0))
         for cid in ctx.rules.checks
     ]
-    # Placeholder verdict until d6-verdict: driven only by cited severities.
-    high = [f.finding_id for f in findings if f.severity == "high"]
-    rating = "likely_blocked" if high else "caution" if findings else "no_likely_barriers"
     used_closed = llm.CLOSED_PROVIDER in providers
     hosts = list(dict.fromkeys(providers)) or ["none"]
     return Report(
@@ -516,8 +526,7 @@ def build_report(ctx: AgentContext, findings: list[Finding], providers: list[str
         video=VideoInfo(video_sha256=m.video_sha256, duration_ms=round(m.source.duration_s * 1000),
                         width=m.sam.width, height=m.sam.height, sam_fps=m.sam.fps,
                         proxy_url=f"/media/{m.video_sha256}/proxy.mp4", frame_ms=m.frame_ms),
-        verdict=RouteVerdict(rating=rating, summary=ctx.summary or "No summary from the agent.",
-                             key_finding_ids=high or [f.finding_id for f in findings[:1]]),
+        verdict=route_verdict(findings, ctx.summary, complete=ctx.finished),
         findings=findings,
         tracks=ctx.inv.tracks,
         checks=checks,
@@ -536,7 +545,8 @@ def _log_run(path: Path, ctx: AgentContext, turns: int, hit_cap: bool, providers
            "clip": ctx.meta.source.filename, "turns": turns, "hit_turn_cap": hit_cap,
            "finished": ctx.finished, "providers": providers, "cost_usd": round(cost, 4),
            "n_findings": len(findings), "n_rejections": len(ctx.rejections), "rechecks": ctx.rechecks,
-           "views": ctx.views, "tool_counts": tool_counts or {}, "stopped_for_budget": budget_stop}
+           "views": ctx.views, "tool_counts": tool_counts or {}, "stopped_for_budget": budget_stop,
+           "baseten_spend_usd": round(usage.provider_spend("baseten"), 4)}
     if hit_cap:
         rec["warning"] = f"hit the {MAX_TURNS}-turn cap before finish"
     path.parent.mkdir(parents=True, exist_ok=True)

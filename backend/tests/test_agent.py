@@ -3,7 +3,7 @@ import json
 
 import numpy as np
 import pytest
-from accesswalk import agent, llm, masks
+from accesswalk import agent, llm, masks, usage
 from accesswalk.inventory import Inventory, build_tracks
 from accesswalk.rules import load_rules
 from accesswalk.sam_parse import SamRecord
@@ -205,6 +205,58 @@ def test_failover_only_on_5xx_429_timeout(tmp_path, status, fails_over):
     else:
         with pytest.raises(llm.ProviderError, match="baseten"):
             llm.chat(msgs, call_fn=fn, **kw)
+
+
+@pytest.mark.parametrize("status, text, fails_over", [
+    (402, "Payment required", True),
+    (403, "You have exceeded your quota", True),
+    (403, "Insufficient credits on this account", True),
+    (403, "Billing is disabled", True),
+    (403, "Forbidden: invalid credentials", False),  # auth, and "credentials" is not "credit"
+    (403, "Model not enabled for this team", False),
+])
+def test_failover_when_baseten_is_out_of_credit(tmp_path, status, text, fails_over):
+    kw = dict(video_sha256="abc", providers=_providers(), out_root=tmp_path, usage_log=tmp_path / "u.jsonl")
+
+    class HostError(Exception):
+        status_code = status
+
+    def fn(p, m, t, prm):
+        if p.name == "baseten":
+            raise HostError(text)
+        return _ok(p, m, t, prm)
+    msgs = [{"role": "user", "content": "q"}]
+    if fails_over:
+        r = llm.chat(msgs, call_fn=fn, **kw)
+        assert r.provider == "fireworks" and "baseten" in r.errors[0]
+    else:
+        with pytest.raises(llm.ProviderError, match="baseten"):
+            llm.chat(msgs, call_fn=fn, **kw)
+
+
+def test_fireworks_out_of_credit_does_not_reach_the_closed_model(tmp_path):
+    kw = dict(video_sha256="abc", providers=_providers(), out_root=tmp_path, usage_log=tmp_path / "u.jsonl")
+
+    class Broke(Exception):
+        status_code = 402
+
+    def fn(p, m, t, prm):
+        raise Broke("Payment required")
+    with pytest.raises(llm.ProviderError):
+        llm.chat([{"role": "user", "content": "q"}], call_fn=fn, allow_closed=True, **kw)
+
+
+def test_baseten_spend_is_cumulative_in_the_log(tmp_path):
+    log = tmp_path / "u.jsonl"
+    kw = dict(video_sha256="abc", providers=_providers(), out_root=tmp_path, usage_log=log)
+    a = llm.chat([{"role": "user", "content": "1"}], call_fn=_ok, **kw)
+    b = llm.chat([{"role": "user", "content": "2"}], call_fn=_ok, **kw)
+    llm.chat([{"role": "user", "content": "1"}], call_fn=_ok, **kw)  # cache hit: no new spend
+    rows = [json.loads(line) for line in log.read_text().splitlines()]
+    want = [a.cost_usd, a.cost_usd + b.cost_usd, a.cost_usd + b.cost_usd]
+    assert [r["extra"]["baseten_spend_usd"] for r in rows] == [pytest.approx(w, abs=1e-4) for w in want]
+    assert usage.provider_spend("baseten", log) == pytest.approx(a.cost_usd + b.cost_usd)
+    assert usage.provider_spend("fireworks", log) == 0
 
 
 def test_timeout_fails_over(tmp_path):

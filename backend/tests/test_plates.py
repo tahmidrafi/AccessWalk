@@ -1,5 +1,5 @@
 """Plate-blur plan: interpolation between 5 fps SAM boxes, holds, gaps, padding. No video."""
-from accesswalk.ingest import IngestMeta, SourceMeta, StreamMeta
+from accesswalk.ingest import IngestMeta, SourceMeta, StreamMeta, on_scene_clock
 from accesswalk.plates import plate_plan, proxy_times_ms
 from accesswalk.schemas import Track, TrackBox
 
@@ -47,7 +47,7 @@ def test_two_tracks_on_one_frame_both_blur():
     assert len(plate_plan([a, b], [1000], 720, 1280)[0]) == 2
 
 
-def test_proxy_times_account_for_the_sam_frame_showing_the_scene_late():
+def test_sam_frames_and_proxy_frames_share_the_scene_clock():
     def meta(fps):
         return IngestMeta(
             video_sha256="a", ingest_version=1, created_at="now",
@@ -58,5 +58,9 @@ def test_proxy_times_account_for_the_sam_frame_showing_the_scene_late():
             proxy=StreamMeta(width=720, height=1280, fps=fps, n_frames=30),
             frame_ms=[0, 200, 400, 600, 800], faces_frames=0, faces_boxes=0,
         )
-    assert proxy_times_ms(meta(29.997))[8] == 200  # measured: SAM frame 1 is proxy frame 8
-    assert proxy_times_ms(meta(24.0))[6] == 167  # 2 frames late at 24 fps too: last before 300 ms is 7
+    m = on_scene_clock(meta(29.997))
+    assert m.frame_ms[1] == proxy_times_ms(m)[8]  # measured: SAM frame 1 is proxy frame 8
+    assert on_scene_clock(m).frame_ms == m.frame_ms  # converts once
+    m = on_scene_clock(meta(24.0))
+    # 2 frames late at 24 fps too (last before 300 ms is 7), within half a frame
+    assert abs(m.frame_ms[1] - proxy_times_ms(m)[7]) < 1000 / 24 / 2

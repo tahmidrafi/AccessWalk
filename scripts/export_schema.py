@@ -4,6 +4,8 @@
   frontend/src/mock/report.json            mock report (--mock; needs the local SAM cache)
   frontend/src/schema/api.schema.json      JSON Schema of the HTTP API models (api_models.py)
   frontend/src/mock/api/*.json             example API responses (one per job state, etc.)
+  frontend/src/schema/eval.schema.json     JSON Schema of the eval results (eval_models.py)
+  frontend/src/mock/eval.json              synthetic eval results (invented numbers, no real clips)
 
 The mock uses REAL SAM 3.1 tracks from the first clip (PXL_20261027_211833467,
 cached by the d4 phrase test) and HAND-WRITTEN findings standing in for the
@@ -25,6 +27,7 @@ sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 from accesswalk import api_models as api  # noqa: E402
 from accesswalk import cache, sam  # noqa: E402
+from accesswalk import eval_models as ev  # noqa: E402
 from accesswalk.ingest import ingest  # noqa: E402
 from accesswalk.inventory import build_tracks  # noqa: E402
 from accesswalk.schemas import (  # noqa: E402
@@ -42,6 +45,8 @@ SCHEMA_OUT = REPO_ROOT / "frontend" / "src" / "schema" / "report.schema.json"
 MOCK_OUT = REPO_ROOT / "frontend" / "src" / "mock" / "report.json"
 API_SCHEMA_OUT = REPO_ROOT / "frontend" / "src" / "schema" / "api.schema.json"
 API_MOCK_DIR = REPO_ROOT / "frontend" / "src" / "mock" / "api"
+EVAL_SCHEMA_OUT = REPO_ROOT / "frontend" / "src" / "schema" / "eval.schema.json"
+EVAL_MOCK_OUT = REPO_ROOT / "frontend" / "src" / "mock" / "eval.json"
 MOCK_CLIP = REPO_ROOT / "data" / "raw" / "PXL_20261027_211833467.mp4"
 MOCK_PHRASES = ["raised sidewalk slab", "tree root", "sidewalk", "overgrown vegetation"]
 LEVEL_REF = "2010 ADA Standards 303.2-303.4: level changes over 1/4 in need a bevel; over 1/2 in, a ramp"
@@ -185,6 +190,53 @@ def write_api_contract() -> None:
     print(f"wrote {API_MOCK_DIR.relative_to(REPO_ROOT)}/*.json")
 
 
+def eval_mock() -> ev.EvalResults:
+    """Invented numbers on invented clips, so the UI has every state to draw: a strong check,
+    a weak one, one with no barriers (null recall), one with no scored findings (null precision)."""
+    rows = {
+        "sidewalk_obstruction": (5, 1, 6, 1, 2), "surface_damage": (4, 2, 5, 3, 3),
+        "missing_curb_ramp": (0, 2, 0, 0, 0), "sidewalk_ends": (0, 0, 0, 1, 0),
+        "steps_without_ramp": (2, 0, 2, 0, 0), "missing_handrail": (1, 1, 1, 0, 1),
+        "round_doorknob": (0, 0, 0, 0, 0), "narrow_passage": (2, 1, 3, 2, 1),
+    }
+    baseline = {
+        "sidewalk_obstruction": (3, 3, 4, 3, 2), "surface_damage": (2, 4, 2, 5, 1),
+        "missing_curb_ramp": (0, 2, 0, 1, 0), "sidewalk_ends": (0, 0, 0, 2, 1),
+        "steps_without_ramp": (2, 0, 2, 1, 0), "missing_handrail": (0, 2, 0, 1, 0),
+        "round_doorknob": (0, 0, 0, 1, 0), "narrow_passage": (1, 2, 1, 2, 2),
+    }
+    names = ("hits", "misses", "matched_findings", "false_positives", "unscored")
+    clips = ["mock-clip-1", "mock-clip-2", "mock-clip-3"]
+
+    def system(kind, run_id, provider, model, cost, table, clip_rows):
+        return ev.SystemEval(
+            system=kind, run_id=run_id, provider=provider, model=model, cost_usd=cost,
+            overall=ev.Counts(**{n: sum(r[i] for r in table.values()) for i, n in enumerate(names)}),
+            per_check=[ev.CheckScore(check_id=c, **dict(zip(names, r, strict=True)))
+                       for c, r in table.items()],
+            per_clip=[ev.ClipScore(clip=c, **dict(zip(names, r, strict=True)), **extra)
+                      for c, (r, extra) in zip(clips, clip_rows, strict=True)],
+        )
+
+    return ev.EvalResults(
+        created_at="2026-10-30T15:00:00+00:00", match_tolerance_ms=1000, clips_scored=clips,
+        clips_not_annotated=19, n_barriers=21, note="Synthetic mock: invented numbers, not a measurement.",
+        systems=[
+            system("agent", "mock-v1", "baseten", "meta-models/muse-spark-open-1026", 0.42, rows,
+                   [((6, 2, 7, 2, 3), {}), ((5, 3, 6, 4, 2), {}), ((3, 2, 4, 1, 2), {})]),
+            system("baseline", "mock-baseline-v1", "meta", "muse-spark-1.3", 0.09, baseline,
+                   [((3, 5, 4, 8, 3), {}), ((5, 3, 5, 8, 3), {}), ((0, 5, 0, 0, 0), {"has_report": False})]),
+        ],
+    )
+
+
+def write_eval_contract() -> None:
+    schema = ev.EvalResults.model_json_schema(mode="serialization")
+    EVAL_SCHEMA_OUT.write_text(json.dumps(schema, indent=2) + "\n")
+    EVAL_MOCK_OUT.write_text(eval_mock().model_dump_json(indent=2) + "\n")
+    print(f"wrote {EVAL_SCHEMA_OUT.relative_to(REPO_ROOT)}, {EVAL_MOCK_OUT.relative_to(REPO_ROOT)}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mock", action="store_true", help="also rebuild the mock report")
@@ -199,6 +251,7 @@ def main() -> int:
         print(f"wrote {MOCK_OUT.relative_to(REPO_ROOT)}: {len(report.findings)} findings, "
               f"{len(report.tracks)} tracks, {sum(t.n_frames for t in report.tracks)} boxes")
     write_api_contract()
+    write_eval_contract()
     return 0
 
 

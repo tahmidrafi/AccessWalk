@@ -15,8 +15,10 @@ Steps (``build_inventory``):
      face-blurred ``sam.mp4`` to ``frames/<i>.jpg`` with license plates (SAM
      ``license plate`` tracks) blurred too, since report frames are published.
   5. proxy: plates are blurred into the published ``proxy.mp4`` (:mod:`plates`).
-  6. masks: every mask ``get_track`` will read is decoded here, in parallel, so the
-     agent's review stage never waits on a ~5 s sidewalk mask decode.
+  6. masks: the masks behind ``get_track``'s on-sidewalk share are decoded here, in
+     parallel, so review never waits on a ~5 s sidewalk mask decode. That share only
+     answers "does it stand on the walkway", so only obstruction objects get it
+     (``on_sidewalk_boxes``), on a few frames each.
 
 Keyframe choice: the frame where the object is most confidently seen, tie-broken
 by box area (bigger = closer to the camera = more legible evidence), ignoring
@@ -24,6 +26,7 @@ boxes clipped by the frame edge when an unclipped one exists.
 """
 from __future__ import annotations
 
+import math
 import os
 import re
 from pathlib import Path
@@ -35,11 +38,14 @@ from pydantic import BaseModel
 from . import masks, plates
 from .ingest import DEFAULT_OUT_ROOT, IngestMeta
 from .phrases import PLATE_PHRASE
+from .rules import load_rules
 from .sam_parse import MaskToken, SamRecord, to_tracks
 from .schemas import BBox, Track, TrackBox
 
 SIDEWALK_PHRASE = "sidewalk"
 SAMPLE_BOXES = 8  # boxes per track shown to the agent by get_track
+ON_SIDEWALK_SAMPLES = 4  # of those, how many also get the mask-based on-sidewalk share
+OBSTRUCTION_CHECK = "sidewalk_obstruction"
 
 
 def phrase_slug(phrase: str) -> str:
@@ -222,19 +228,30 @@ def sampled_boxes(t: Track) -> list[TrackBox]:
     return sample
 
 
-def review_masks(tracks: list[Track], records_by_phrase: dict[str, list[SamRecord]]) -> list[MaskToken]:
-    """Every mask ``get_track`` can ask for: each sampled box of a non-sidewalk
-    track, plus the sidewalk masks on the same frame."""
+def on_sidewalk_boxes(t: Track, phrases: set[str]) -> list[TrackBox]:
+    """The boxes ``get_track`` measures against the sidewalk: evenly spaced, plus the
+    keyframe. None unless the track's phrase is one of ``phrases``."""
+    if t.phrase not in phrases:
+        return []
+    sample = sorted(sampled_boxes(t), key=lambda b: b.frame_index)
+    picked = sample[:: math.ceil(len(sample) / ON_SIDEWALK_SAMPLES)]
+    if t.keyframe_index not in {b.frame_index for b in picked}:
+        picked.append(next(b for b in sample if b.frame_index == t.keyframe_index))
+    return picked
+
+
+def review_masks(tracks: list[Track], records_by_phrase: dict[str, list[SamRecord]],
+                 phrases: set[str]) -> list[MaskToken]:
+    """Every mask ``get_track`` will read for tracks of ``phrases``: the object's own on
+    each measured box, plus the sidewalk masks on the same frame."""
     walks: dict[int, list[MaskToken]] = {}
     for r in records_by_phrase.get(SIDEWALK_PHRASE, []):
         if r.mask:
             walks.setdefault(r.frame_index, []).append(r.mask)
     out: list[MaskToken] = []
     for t in tracks:
-        if t.phrase == SIDEWALK_PHRASE:
-            continue
         recs = {r.frame_index: r for r in records_by_phrase.get(t.phrase, []) if r.object_id == t.object_id}
-        for b in sampled_boxes(t):
+        for b in on_sidewalk_boxes(t, phrases):
             rec = recs.get(b.frame_index)
             if rec is not None and rec.mask is not None:
                 out.append(rec.mask)
@@ -275,7 +292,9 @@ def build_inventory(
             t.mask_url = mask_urls.get(t.track_id)
         plates.blur_proxy(meta, plate_tracks, out_root)
         try:
-            masks.predecode(review_masks(inv.tracks, stitched), Path(out_root) / meta.video_sha256 / "masks",
+            phrases = set(load_rules().checks[OBSTRUCTION_CHECK].evidence_phrases)
+            masks.predecode(review_masks(inv.tracks, stitched, phrases),
+                            Path(out_root) / meta.video_sha256 / "masks",
                             workers=max(1, (os.cpu_count() or 2) - 1))
         except RuntimeError:  # decoder missing: get_track says so; not worth failing the job
             pass

@@ -69,6 +69,17 @@ def test_mask_png_is_full_frame_with_transparent_background():
     assert tuple(img[22, 12]) == (255, 255, 255, 255) and img[20, 10, 3] == 0
 
 
+def test_on_sidewalk_boxes_are_few_and_include_the_keyframe():
+    from accesswalk.inventory import ON_SIDEWALK_SAMPLES, on_sidewalk_boxes, sampled_boxes
+
+    recs = [_rec(f, 0, 0, 0, 10, 10) for f in range(40)]
+    t = build_tracks("trash bin", recs, _meta())[0]
+    picked = on_sidewalk_boxes(t, {"trash bin"})
+    assert len(picked) <= ON_SIDEWALK_SAMPLES + 1 and len(picked) < len(sampled_boxes(t))
+    assert t.keyframe_index in {b.frame_index for b in picked}
+    assert on_sidewalk_boxes(t, {"pole"}) == []
+
+
 def test_review_masks_cover_get_track_samples_and_predecode_skips_cached(tmp_path, monkeypatch):
     import numpy as np
     from accesswalk import masks
@@ -83,8 +94,9 @@ def test_review_masks_cover_get_track_samples_and_predecode_skips_cached(tmp_pat
     other = _rec(30, 0, 0, 0, 10, 10).model_copy(update={"mask": tok("w30")})
     records = {"trash bin": obj, "sidewalk": [walk, other]}
     tracks = build_tracks("trash bin", obj, m) + build_tracks("sidewalk", [walk, other], m)
-    tokens = review_masks(tracks, records)
-    assert {t.data for t in tokens} == {"o0", "o1", "o2", "w1"}  # no sidewalk mask off the sampled frames
+    assert review_masks(tracks, records, {"car"}) == []  # not in scope: nothing decoded
+    tokens = review_masks(tracks, records, {"trash bin"})
+    assert {t.data for t in tokens} == {"o0", "o1", "o2", "w1"}  # no sidewalk mask off the measured frames
 
     calls = []
     monkeypatch.setattr(masks, "_decode", lambda t: calls.append(t.data) or np.zeros((1, 2), "uint8"))

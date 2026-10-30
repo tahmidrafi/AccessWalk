@@ -46,7 +46,13 @@ def read_log(path: str | Path = DEFAULT_USAGE_LOG) -> list[UsageRecord]:
     p = Path(path)
     if not p.exists():
         return []
-    return [UsageRecord.model_validate_json(line) for line in p.read_text().splitlines() if line.strip()]
+    lines = p.read_text(encoding="utf-8").splitlines()
+    return [UsageRecord.model_validate_json(line) for line in lines if line.strip()]
+
+
+def provider_spend(provider: str, path: str | Path = DEFAULT_USAGE_LOG) -> float:
+    """USD logged for one host so far. Cheap enough per call: the log is small."""
+    return sum(r.cost_usd or 0.0 for r in read_log(path) if r.provider == provider)
 
 
 def total_cost(path: str | Path = DEFAULT_USAGE_LOG) -> float:

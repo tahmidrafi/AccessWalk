@@ -3,21 +3,24 @@
 Providers (keys in .env, see .env.example):
   baseten    Muse Spark Open, open weights (primary; the open-weight bonus is judged on it)
   fireworks  the same open-weight model on a second host. Failover happens only on
-             errors the host may recover from (5xx, 429, timeouts); any other error,
-             including a 4xx, is our request's fault and raises at once.
+             errors the host may recover from (5xx, 429, timeouts) and on Baseten running
+             out of credit (402, or 403 naming quota or credit); any other error,
+             including another 4xx, is our request's fault and raises at once.
   meta       Muse Spark 1.3, closed. OFF unless the caller passes allow_closed=True; a
              run that used it says so in its provenance. Eval and demo runs never set it.
 
 Every call is cached under ``data/cache/<video_sha>/llm/<key>.json`` where the key
 hashes provider, model, messages, tool definitions and sampling params, so a re-run
 is free and a changed tool schema never reuses an old answer. Every call, hit or
-miss, is logged to ``usage.jsonl`` with the model the response says served it.
+miss, is logged to ``usage.jsonl`` with the model the response says served it. Baseten
+records also carry ``extra.baseten_spend_usd``, the running total, against its $100 credit.
 """
 from __future__ import annotations
 
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -111,6 +114,17 @@ def is_retryable(e: Exception) -> bool:
     return status is not None and (status == 429 or status >= 500)
 
 
+_BILLING = re.compile(r"quota|credit|billing", re.I)
+
+
+def is_out_of_credit(e: Exception, provider: str) -> bool:
+    """Baseten says it will not serve us for money reasons. Fireworks has its own credit."""
+    if provider != "baseten":
+        return False
+    status = getattr(e, "status_code", None)
+    return status == 402 or (status == 403 and bool(_BILLING.search(str(e))))
+
+
 def _call(provider: Provider, messages: list, tools: list | None, params: dict, client=None) -> dict:
     client = client or OpenAI(api_key=os.environ[provider.api_key_env], base_url=provider.base_url)
     kwargs = dict(model=provider.model, messages=messages, **params)
@@ -157,9 +171,9 @@ def chat(
                 data = call_fn(p, messages, tools, params)
             except Exception as e:
                 msg = f"{name}: {type(e).__name__}: {str(e)[:200]}"
-                if not is_retryable(e):
+                if not is_retryable(e) and not is_out_of_credit(e, name):
                     raise ProviderError(msg + (" | earlier: " + " | ".join(errors) if errors else "")) from e
-                errors.append(msg)  # 5xx / 429 / timeout: try the next host
+                errors.append(msg)  # 5xx / 429 / timeout / out of credit: try the next host
                 continue
             cost, hit = cost_usd(name, data["usage"]), False
             cpath.parent.mkdir(parents=True, exist_ok=True)
@@ -172,7 +186,9 @@ def chat(
             usage.UsageRecord(
                 provider=name, model_requested=p.model, model_served=data.get("model_served"),
                 usage=data["usage"], cache_hit=hit, cost_usd=cost, video_sha256=video_sha256,
-                extra={"cache_key": key, "tag": tag, "failed_before": errors},
+                extra={"cache_key": key, "tag": tag, "failed_before": errors,
+                       **({"baseten_spend_usd": round(usage.provider_spend("baseten", usage_log) + cost, 4)}
+                          if name == "baseten" else {})},
             ),
             path=usage_log,
         )

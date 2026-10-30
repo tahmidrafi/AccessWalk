@@ -1,0 +1,323 @@
+{
+  "$defs": {
+    "CheckScore": {
+      "properties": {
+        "hits": {
+          "default": 0,
+          "title": "Hits",
+          "type": "integer"
+        },
+        "misses": {
+          "default": 0,
+          "title": "Misses",
+          "type": "integer"
+        },
+        "matched_findings": {
+          "default": 0,
+          "title": "Matched Findings",
+          "type": "integer"
+        },
+        "false_positives": {
+          "default": 0,
+          "title": "False Positives",
+          "type": "integer"
+        },
+        "unscored": {
+          "default": 0,
+          "title": "Unscored",
+          "type": "integer"
+        },
+        "check_id": {
+          "enum": [
+            "sidewalk_obstruction",
+            "surface_damage",
+            "missing_curb_ramp",
+            "sidewalk_ends",
+            "steps_without_ramp",
+            "missing_handrail",
+            "round_doorknob",
+            "narrow_passage"
+          ],
+          "title": "Check Id",
+          "type": "string"
+        },
+        "precision": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "readOnly": true,
+          "title": "Precision"
+        },
+        "recall": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "readOnly": true,
+          "title": "Recall"
+        }
+      },
+      "required": [
+        "check_id",
+        "precision",
+        "recall"
+      ],
+      "title": "CheckScore",
+      "type": "object"
+    },
+    "ClipScore": {
+      "properties": {
+        "hits": {
+          "default": 0,
+          "title": "Hits",
+          "type": "integer"
+        },
+        "misses": {
+          "default": 0,
+          "title": "Misses",
+          "type": "integer"
+        },
+        "matched_findings": {
+          "default": 0,
+          "title": "Matched Findings",
+          "type": "integer"
+        },
+        "false_positives": {
+          "default": 0,
+          "title": "False Positives",
+          "type": "integer"
+        },
+        "unscored": {
+          "default": 0,
+          "title": "Unscored",
+          "type": "integer"
+        },
+        "clip": {
+          "title": "Clip",
+          "type": "string"
+        },
+        "has_report": {
+          "default": true,
+          "title": "Has Report",
+          "type": "boolean"
+        },
+        "precision": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "readOnly": true,
+          "title": "Precision"
+        },
+        "recall": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "readOnly": true,
+          "title": "Recall"
+        }
+      },
+      "required": [
+        "clip",
+        "precision",
+        "recall"
+      ],
+      "title": "ClipScore",
+      "type": "object"
+    },
+    "Counts": {
+      "properties": {
+        "hits": {
+          "default": 0,
+          "title": "Hits",
+          "type": "integer"
+        },
+        "misses": {
+          "default": 0,
+          "title": "Misses",
+          "type": "integer"
+        },
+        "matched_findings": {
+          "default": 0,
+          "title": "Matched Findings",
+          "type": "integer"
+        },
+        "false_positives": {
+          "default": 0,
+          "title": "False Positives",
+          "type": "integer"
+        },
+        "unscored": {
+          "default": 0,
+          "title": "Unscored",
+          "type": "integer"
+        },
+        "precision": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "readOnly": true,
+          "title": "Precision"
+        },
+        "recall": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "readOnly": true,
+          "title": "Recall"
+        }
+      },
+      "required": [
+        "precision",
+        "recall"
+      ],
+      "title": "Counts",
+      "type": "object"
+    },
+    "SystemEval": {
+      "description": "One system's scores on the annotated clips.",
+      "properties": {
+        "system": {
+          "enum": [
+            "agent",
+            "baseline"
+          ],
+          "title": "System",
+          "type": "string"
+        },
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "cost_usd": {
+          "title": "Cost Usd",
+          "type": "number"
+        },
+        "overall": {
+          "$ref": "#/$defs/Counts"
+        },
+        "per_check": {
+          "items": {
+            "$ref": "#/$defs/CheckScore"
+          },
+          "title": "Per Check",
+          "type": "array"
+        },
+        "per_clip": {
+          "items": {
+            "$ref": "#/$defs/ClipScore"
+          },
+          "title": "Per Clip",
+          "type": "array"
+        }
+      },
+      "required": [
+        "system",
+        "run_id",
+        "provider",
+        "model",
+        "cost_usd",
+        "overall",
+        "per_check",
+        "per_clip"
+      ],
+      "title": "SystemEval",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "created_at": {
+      "title": "Created At",
+      "type": "string"
+    },
+    "match_tolerance_ms": {
+      "title": "Match Tolerance Ms",
+      "type": "integer"
+    },
+    "clips_scored": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Clips Scored",
+      "type": "array"
+    },
+    "clips_not_annotated": {
+      "title": "Clips Not Annotated",
+      "type": "integer"
+    },
+    "n_barriers": {
+      "title": "N Barriers",
+      "type": "integer"
+    },
+    "systems": {
+      "items": {
+        "$ref": "#/$defs/SystemEval"
+      },
+      "title": "Systems",
+      "type": "array"
+    },
+    "note": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Note"
+    }
+  },
+  "required": [
+    "created_at",
+    "match_tolerance_ms",
+    "clips_scored",
+    "clips_not_annotated",
+    "n_barriers",
+    "systems"
+  ],
+  "title": "EvalResults",
+  "type": "object"
+}

@@ -29,10 +29,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
 import cv2
 import numpy as np
@@ -80,8 +82,10 @@ class IngestMeta(BaseModel):
     source: SourceMeta
     sam: StreamMeta
     proxy: StreamMeta
-    # sam.mp4 frame index -> timestamp in the (re-encoded) clip, milliseconds.
+    # sam.mp4 frame index -> when the frame's scene shows in proxy.mp4, milliseconds.
     frame_ms: list[int]
+    # "pts": sam.mp4's own timestamps (meta.json from before Oct 30, converted on load).
+    frame_ms_clock: Literal["pts", "scene"] = "pts"
     faces_frames: int  # number of source frames with >=1 detection
     faces_boxes: int  # total detection boxes blurred (before hold)
     # sha256 of the encoded sam.mp4: part of the SAM cache key, so a re-ingest that
@@ -458,6 +462,18 @@ def _extract_audio(raw: Path, out_dir: Path, has_audio: bool) -> None:
     )
 
 
+def on_scene_clock(meta: IngestMeta) -> IngestMeta:
+    """Move ``frame_ms`` from sam.mp4's timestamps to when the scene shows in proxy.mp4.
+    ffmpeg's fps filter gives SAM frame n the last source frame before (n + 0.5) / SAM_FPS,
+    so it shows the scene just under half a SAM frame after its pts (2 frames at 30 fps)."""
+    if meta.frame_ms_clock == "scene":
+        return meta
+    fps = meta.proxy.fps
+    late_ms = (math.ceil(fps * 0.5 / meta.sam.fps) - 1) / fps * 1000
+    return meta.model_copy(update={"frame_ms": [round(ms + late_ms) for ms in meta.frame_ms],
+                                   "frame_ms_clock": "scene"})
+
+
 def _frame_ms_table(sam_mp4: Path) -> list[int]:
     """Real per-frame timestamps (ms) read from the encoded sam.mp4 pts."""
     out = subprocess.run(
@@ -512,6 +528,9 @@ def ingest(
     if meta_path.exists() and not force:
         cached = IngestMeta.model_validate_json(meta_path.read_text())
         if cached.ingest_version == INGEST_VERSION:
+            if cached.frame_ms_clock == "pts":
+                cached = on_scene_clock(cached)
+                meta_path.write_text(cached.model_dump_json(indent=2))
             if cached.proxy.n_frames == 0 and (out_dir / "proxy.mp4").exists():
                 cached.proxy.n_frames = _count_frames(out_dir / "proxy.mp4")
                 meta_path.write_text(cached.model_dump_json(indent=2))
@@ -544,6 +563,7 @@ def ingest(
         faces_rejected=faces_rejected,
         sam_sha256=sha256_file(sam_mp4),
     )
+    meta = on_scene_clock(meta)
     meta_path.write_text(meta.model_dump_json(indent=2))
     (out_dir / "ffmpeg.stderr.log").unlink(missing_ok=True)
     return meta

@@ -97,7 +97,7 @@ def main() -> int:
               f"{row.get('rejection_kinds') or ''} turn_cap {row.get('turn_cap')} "
               f"budget_stop {row.get('budget_stop')} failovers {len(row['failovers'])} "
               f"{row['seconds']} s error {row['error']} | running ${spent:.4f}", flush=True)
-    print(f"TOTAL ${spent:.4f}")
+    print(f"TOTAL ${spent:.4f} | Baseten to date ${usage.provider_spend('baseten'):.4f}")
     return 0
 
 

@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
 import subprocess
 from pathlib import Path
 
@@ -72,12 +71,8 @@ def plate_plan(
 
 
 def proxy_times_ms(meta: IngestMeta) -> list[int]:
-    """Each proxy frame's time on the clock of ``frame_ms``. ffmpeg's fps filter gives
-    SAM frame n the last source frame before (n + 0.5) / SAM_FPS, so it shows the scene
-    just under half a SAM frame after its pts (2 frames at 30 fps, measured on 3 clips)."""
-    fps = meta.proxy.fps
-    late = (math.ceil(fps * 0.5 / meta.sam.fps) - 1) / fps
-    return [round((i / fps - late) * 1000) for i in range(meta.proxy.n_frames)]
+    """Each proxy frame's time, on the clock of ``frame_ms`` (see ``ingest.on_scene_clock``)."""
+    return [round(i / meta.proxy.fps * 1000) for i in range(meta.proxy.n_frames)]
 
 
 def blur_proxy(meta: IngestMeta, plate_tracks: list[Track], out_root: str | Path = DEFAULT_OUT_ROOT) -> int:
