@@ -61,7 +61,7 @@ write a tagged PDF: headings become the outline ("Route verdict: ...",
 keeps its header cells. Checked with headless Chrome `--print-to-pdf` (4 pages
 for the mock).
 
-
+## Accessibility
 
 Landmarks and a skip link; one `h1`, an `h2` per section, an `h3` per finding.
 Severity and "verify manually" are text + shape, never colour alone. Timeline
