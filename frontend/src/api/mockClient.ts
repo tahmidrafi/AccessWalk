@@ -1,3 +1,4 @@
+import health from '../mock/api/health.json'
 import jobDone from '../mock/api/job_done.json'
 import jobFailed from '../mock/api/job_failed.json'
 import jobQueued from '../mock/api/job_queued.json'
@@ -6,7 +7,7 @@ import notFound from '../mock/api/error_not_found.json'
 import reports from '../mock/api/reports.json'
 import mockReport from '../mock/report.json'
 import { validateVideo } from '../lib/jobs'
-import type { JobStatus, ReportList } from '../types/api'
+import type { Health, JobStatus, ReportList } from '../types/api'
 import type { Report } from '../types/report'
 import { ApiError, type ApiClient, type MockScenario } from './client'
 
@@ -44,7 +45,6 @@ const PLAN: { stage: NonNullable<JobStatus['stage']>; from: number; to: number; 
 export const MOCK_DONE_MS = 20_000
 const SAM_PHRASES = 12
 const SAM_COST = 0.33 // ~$0.33 for 12 phrases on a 22 s clip at 5 fps
-const FINAL_COST = jobDone.cost_usd
 const PIPELINE_ERROR_MS = 15_000
 
 function iso(ms: number): string {
@@ -70,7 +70,7 @@ function costAt(ms: number): number {
   const seg = PLAN[1]
   const rev = PLAN[3]
   const sam = SAM_COST * Math.min(1, Math.max(0, (ms - seg.from) / (seg.to - seg.from)))
-  const agent = (FINAL_COST - SAM_COST) * Math.min(1, Math.max(0, (ms - rev.from) / (rev.to - rev.from)))
+  const agent = (jobDone.cost_usd - SAM_COST) * Math.min(1, Math.max(0, (ms - rev.from) / (rev.to - rev.from)))
   return Math.round((sam + agent) * 100) / 100
 }
 
@@ -155,6 +155,11 @@ export function createMockClient(now: () => number = Date.now): ApiClient {
   let scenario: ScenarioId = 'success'
 
   return {
+    async health() {
+      await wait(150)
+      return health as Health
+    },
+
     async createJob(video, title, onProgress, signal) {
       // The server re-checks what the page already checked (type, size).
       const invalid = validateVideo(video, null)

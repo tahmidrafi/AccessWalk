@@ -1014,6 +1014,10 @@ progress {
 .recent li {
   margin: 0.3rem 0;
 }
+.provenance {
+  margin-top: 2rem;
+  font-size: 0.875rem;
+}
 
 /* PDF export */
 
