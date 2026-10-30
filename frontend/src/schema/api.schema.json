@@ -1,0 +1,269 @@
+{
+  "$defs": {
+    "ErrorResponse": {
+      "properties": {
+        "error": {
+          "$ref": "#/$defs/JobError"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "title": "ErrorResponse",
+      "type": "object"
+    },
+    "Health": {
+      "properties": {
+        "ok": {
+          "title": "Ok",
+          "type": "boolean"
+        },
+        "api_version": {
+          "default": "1.0",
+          "title": "Api Version",
+          "type": "string"
+        },
+        "agent_provider": {
+          "title": "Agent Provider",
+          "type": "string"
+        },
+        "agent_model": {
+          "title": "Agent Model",
+          "type": "string"
+        },
+        "sam_model": {
+          "title": "Sam Model",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ok",
+        "agent_provider",
+        "agent_model",
+        "sam_model"
+      ],
+      "title": "Health",
+      "type": "object"
+    },
+    "JobError": {
+      "properties": {
+        "code": {
+          "enum": [
+            "bad_request",
+            "too_large",
+            "unsupported_media",
+            "not_found",
+            "over_budget",
+            "pipeline_error"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "JobError",
+      "type": "object"
+    },
+    "JobStatus": {
+      "properties": {
+        "job_id": {
+          "title": "Job Id",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "running",
+            "done",
+            "failed"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "stage": {
+          "anyOf": [
+            {
+              "enum": [
+                "ingest",
+                "segment",
+                "inventory",
+                "review",
+                "report"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stage"
+        },
+        "progress": {
+          "default": 0.0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Progress",
+          "type": "number"
+        },
+        "message": {
+          "default": "",
+          "title": "Message",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "video_sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Video Sha256"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "title": "Updated At",
+          "type": "string"
+        },
+        "cost_usd": {
+          "default": 0.0,
+          "title": "Cost Usd",
+          "type": "number"
+        },
+        "report_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Report Id"
+        },
+        "report_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Report Url"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JobError"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "job_id",
+        "state",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "JobStatus",
+      "type": "object"
+    },
+    "ReportList": {
+      "properties": {
+        "reports": {
+          "items": {
+            "$ref": "#/$defs/ReportSummary"
+          },
+          "title": "Reports",
+          "type": "array"
+        }
+      },
+      "required": [
+        "reports"
+      ],
+      "title": "ReportList",
+      "type": "object"
+    },
+    "ReportSummary": {
+      "properties": {
+        "report_id": {
+          "title": "Report Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "video_sha256": {
+          "title": "Video Sha256",
+          "type": "string"
+        },
+        "created_at": {
+          "title": "Created At",
+          "type": "string"
+        },
+        "rating": {
+          "enum": [
+            "no_likely_barriers",
+            "caution",
+            "likely_blocked"
+          ],
+          "title": "Rating",
+          "type": "string"
+        },
+        "n_findings": {
+          "title": "N Findings",
+          "type": "integer"
+        },
+        "report_url": {
+          "title": "Report Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "report_id",
+        "title",
+        "video_sha256",
+        "created_at",
+        "rating",
+        "n_findings",
+        "report_url"
+      ],
+      "title": "ReportSummary",
+      "type": "object"
+    }
+  },
+  "title": "AccessWalk HTTP API 1.0"
+}

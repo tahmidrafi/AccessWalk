@@ -91,3 +91,17 @@ def test_committed_json_schema_matches_models():
 
 def test_committed_mock_validates():
     Report.model_validate_json(MOCK_JSON.read_text())
+
+
+def test_api_contract_exported_and_mocks_valid():
+    from accesswalk import api_models as api
+    api_schema = REPO_ROOT / "frontend" / "src" / "schema" / "api.schema.json"
+    assert json.loads(api_schema.read_text()) == api.json_schema(), (
+        "api.schema.json is stale: run scripts/export_schema.py"
+    )
+    mocks = REPO_ROOT / "frontend" / "src" / "mock" / "api"
+    for name, model in [("health", api.Health), ("job_queued", api.JobStatus),
+                        ("job_running", api.JobStatus),
+                        ("job_done", api.JobStatus), ("job_failed", api.JobStatus),
+                        ("reports", api.ReportList), ("error_not_found", api.ErrorResponse)]:
+        model.model_validate_json((mocks / f"{name}.json").read_text())

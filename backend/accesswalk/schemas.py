@@ -36,6 +36,7 @@ CheckId = Literal[
     "narrow_passage",
 ]
 Severity = Literal["low", "medium", "high"]
+RouteRating = Literal["no_likely_barriers", "caution", "likely_blocked"]
 
 DISCLAIMER = (
     "Pre-trip screening from a phone video. Findings are likely barriers, not compliance "
@@ -129,7 +130,7 @@ class VideoInfo(BaseModel):
 
 
 class RouteVerdict(BaseModel):
-    rating: Literal["no_likely_barriers", "caution", "likely_blocked"]
+    rating: RouteRating
     summary: str
     key_finding_ids: list[str] = Field(default_factory=list)
 

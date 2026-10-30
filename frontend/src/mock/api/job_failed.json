@@ -1,0 +1,18 @@
+{
+  "job_id": "job-7f3a9c",
+  "state": "failed",
+  "stage": "ingest",
+  "progress": 0.05,
+  "message": "Upload rejected",
+  "title": "Residential sidewalk past a large tree",
+  "video_sha256": null,
+  "created_at": "2026-10-30T15:00:00+00:00",
+  "updated_at": "2026-10-30T15:03:20+00:00",
+  "cost_usd": 0.0,
+  "report_id": null,
+  "report_url": null,
+  "error": {
+    "code": "bad_request",
+    "message": "video is 4.2 min long; the limit is 2 min"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "ok": true,
+  "api_version": "1.0",
+  "agent_provider": "baseten",
+  "agent_model": "meta-models/muse-spark-open-1026",
+  "sam_model": "sam-3.1"
+}
