@@ -6,6 +6,8 @@ import {
   ERROR_HELP,
   STAGES,
   asSentence,
+  expectedProcessingText,
+  pickSampleReport,
   reportPagePath,
   stageSteps,
   statusSentence,
@@ -20,7 +22,7 @@ import jobQueued from './mock/api/job_queued.json'
 import jobRunning from './mock/api/job_running.json'
 import reports from './mock/api/reports.json'
 import apiSchema from './schema/api.schema.json'
-import type { JobStatus } from './types/api'
+import type { JobStatus, ReportSummary } from './types/api'
 
 const ajv = new Ajv({ allErrors: true, strict: false })
 ajv.addSchema(apiSchema, 'api')
@@ -154,6 +156,29 @@ describe('job helpers', () => {
     expect(validateVideo({ name: 'walk', size: 1 }, null)?.code).toBe('unsupported_media')
     expect(validateVideo({ name: 'walk.mp4', size: 301 * mb }, null)?.code).toBe('too_large')
     expect(validateVideo({ name: 'walk.mp4', size: 1 }, 121)?.code).toBe('bad_request')
+  })
+
+  it('picks the newest report with findings as the sample', () => {
+    const r = (report_id: string, created_at: string, n_findings: number) => ({
+      report_id,
+      title: report_id,
+      video_sha256: 'x',
+      created_at,
+      rating: 'caution' as const,
+      n_findings,
+      report_url: `/api/reports/${report_id}`,
+    })
+    const old = r('old', '2026-10-29T10:00:00+00:00', 2)
+    const newer = r('newer', '2026-10-30T10:00:00+00:00', 1)
+    const clean = r('clean', '2026-10-30T12:00:00+00:00', 0)
+    expect(pickSampleReport([old, newer, clean])?.report_id).toBe('newer')
+    expect(pickSampleReport([clean])?.report_id).toBe('clean')
+    expect(pickSampleReport([])).toBeNull()
+    expect(pickSampleReport(reports.reports as ReportSummary[])?.report_url).toBe(reports.reports[0].report_url)
+  })
+
+  it('states the expected time in words a screen reader reads correctly', () => {
+    expect(expectedProcessingText()).toBe('Analysis takes about 6 to 7 minutes for a 30-second clip.')
   })
 
   it('marks each stage done, current, failed or waiting', () => {

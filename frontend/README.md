@@ -92,6 +92,12 @@ outcome" on the upload page picks the ending: report ready, over budget (stops
 after ingest, nothing charged), pipeline error (during review), or an upload
 rejected with 400 or 413. A finished job links to its report via `report_url`.
 
+For the live demo, "Try a sample route" on the upload page opens a finished report
+straight away, with no upload: the newest one in the report list that has findings
+(`pickSampleReport`). If the list can't be loaded the page says so. The expected
+processing time next to the upload button comes from `EXPECTED_PROCESSING` in
+`src/lib/jobs.ts`, a fixed estimate for now.
+
 Accessibility: errors are announced (`role="alert"`) and focused, with the
 server message plus what to do next; field errors sit on the field
 (`aria-invalid`, `aria-describedby`). Focus moves to the new page's heading

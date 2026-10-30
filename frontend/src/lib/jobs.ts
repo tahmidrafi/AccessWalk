@@ -1,4 +1,4 @@
-import type { JobError, JobStatus } from '../types/api'
+import type { JobError, JobStatus, ReportSummary } from '../types/api'
 
 /** Server limits (backend/accesswalk/api_models.py: MAX_UPLOAD_MB, MAX_DURATION_S). */
 export const MAX_UPLOAD_MB = 300
@@ -6,6 +6,20 @@ export const MAX_DURATION_S = 120
 export const VIDEO_EXTENSIONS = ['.mp4', '.mov']
 /** The API contract asks clients to poll about every 2 s. */
 export const POLL_MS = 2000
+
+/** Expected time from upload to report, shown before uploading. A fixed estimate for now. */
+export const EXPECTED_PROCESSING = { minMinutes: 6, maxMinutes: 7, clipSeconds: 30 }
+
+/** "to", not a dash: screen readers can read "6-7" as a subtraction or a single number. */
+export function expectedProcessingText(e = EXPECTED_PROCESSING): string {
+  return `Analysis takes about ${e.minMinutes} to ${e.maxMinutes} minutes for a ${e.clipSeconds}-second clip.`
+}
+
+/** The report behind "Try a sample route": the newest one with findings, else the newest. */
+export function pickSampleReport(reports: ReportSummary[]): ReportSummary | null {
+  const newestFirst = [...reports].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+  return newestFirst.find((r) => r.n_findings > 0) ?? newestFirst[0] ?? null
+}
 
 export type StageId = NonNullable<JobStatus['stage']>
 

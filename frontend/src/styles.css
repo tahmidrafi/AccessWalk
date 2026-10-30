@@ -73,6 +73,8 @@
 body {
   margin: 0;
   background: var(--bg);
+  /* File-name titles (PXL_20261027_211833467) must not push a phone page sideways. */
+  overflow-wrap: break-word;
 }
 
 a {
@@ -902,6 +904,34 @@ input[type='file']::file-selector-button {
   margin-bottom: 0.5rem;
 }
 
+.sample {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 1.25rem;
+  padding: 0.9rem 1.25rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.sample h2 {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 1.125rem;
+}
+.sample .hint,
+.upload-submit .hint {
+  flex: 1 1 14rem;
+  margin: 0;
+}
+.upload-submit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
 button.primary,
 a.button {
   display: inline-flex;
@@ -917,6 +947,15 @@ a.button.primary {
   background: var(--link);
   border: 2px solid var(--link);
   text-decoration: none;
+}
+a.button:not(.primary) {
+  color: var(--link);
+  background: var(--surface);
+  border: 2px solid var(--link);
+  text-decoration: none;
+}
+a.button:not(.primary):hover {
+  text-decoration: underline;
 }
 a.button.primary:hover,
 button.primary:hover {
