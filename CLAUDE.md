@@ -105,6 +105,8 @@ eval: ground truth ─► precision/recall per check; baseline = Muse Spark 1.3 
   blurred keyframes from 2–3 clips. Measure: clear width at a narrow passage, slab lift height, slope.
 - Go if estimates are within a plausible range of tape-measure checks; then expose a `measure_geometry`
   agent tool and report values as "~estimated" with `verify_manually: true`. No-go → drop, note in README.
+- Result Oct 30 (local CPU, not Modal; `scripts/spike_mapanything.py`): lift and slope dropped. Width passes on
+  repeatability only and no tape check exists yet, so `measure_geometry` waits for `d8-tapecheck`.
 
 ## MVP checks (outdoor first)
 1. Sidewalk obstruction (bins, branches, cars, signs)  2. Surface damage (heaved/broken slabs, potholes)
@@ -149,7 +151,8 @@ Known limitation: when a finding rests on depth/height/slope judged from video a
   OpenAI-compatible, `https://api.fireworks.ai/inference/v1`, model `accounts/fireworks/models/muse-spark-open`
   (serverless; verified via `/models` Oct 28). $1.25/M in, $0.15/M cached, $4.25/M out. Don't use the
   "816B-A42B NVFP4" or Glimmer entries: those need a dedicated deployment billed per GPU hour.
-  Provider is a config switch, not new code.
+  Provider is a config switch, not new code. Failover also fires on Baseten 402, or 403 with a quota/credit
+  message; `extra.baseten_spend_usd` in the usage log is the cumulative Baseten spend.
 - **Modal**: GPU only for the MapAnything spike (and optionally hosting the backend for the live demo).
   Set function timeouts, scale to zero, cap GPU minutes; log GPU seconds per run.
 - Every model call logs `provider`, `model`, `usage` to `data/out/usage.jsonl`.
