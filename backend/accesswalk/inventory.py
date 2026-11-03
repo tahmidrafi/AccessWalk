@@ -26,6 +26,8 @@ boxes clipped by the frame edge when an unclipped one exists.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 import os
 import re
@@ -149,7 +151,12 @@ def render_frames(
     pad: float = 0.3,
 ) -> dict[int, Path]:
     """Write ``frames/<i>.jpg`` from the face-blurred ``sam.mp4``, blurring any
-    plate box on that frame. Returns frame_index -> path."""
+    plate box on that frame. Returns frame_index -> path.
+
+    A frame already on disk is kept, so the agent sees the same bytes on every run
+    (its cache key includes the images) and a host with another OpenCV build
+    replays from cache. All frames are dropped when the plate boxes change (the
+    ``.plates`` digest); ingest drops them when sam.mp4 is rebuilt."""
     clip_dir = Path(out_root) / meta.video_sha256
     out_dir = clip_dir / "frames"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -157,7 +164,16 @@ def render_frames(
     for t in plate_tracks:
         for b in t.boxes:
             plates.setdefault(b.frame_index, []).append(b)
-    written: dict[int, Path] = {}
+    boxes = sorted((i, b.x1, b.y1, b.x2, b.y2) for i, bs in plates.items() for b in bs)
+    digest = hashlib.sha256(json.dumps(boxes).encode()).hexdigest()[:16]
+    stamp = out_dir / ".plates"
+    if stamp.exists() and stamp.read_text() != digest:
+        for old in out_dir.glob("*.jpg"):
+            old.unlink()
+    stamp.write_text(digest)  # no stamp yet (frames from before Nov 3): keep them, as rendered
+    written = {i: out_dir / f"{i}.jpg" for i in frame_indices if (out_dir / f"{i}.jpg").exists()}
+    if not frame_indices - written.keys():
+        return written
     cap = cv2.VideoCapture(str(clip_dir / "sam.mp4"))
     try:
         i = 0
@@ -165,7 +181,7 @@ def render_frames(
             ok, frame = cap.read()
             if not ok:
                 break
-            if i in frame_indices:
+            if i in frame_indices and i not in written:
                 h, w = frame.shape[:2]
                 for b in plates.get(i, []):
                     px, py = int((b.x2 - b.x1) * pad), int((b.y2 - b.y1) * pad)

@@ -30,6 +30,7 @@ import argparse
 import hashlib
 import json
 import math
+import shutil
 import subprocess
 import sys
 from datetime import UTC, datetime
@@ -539,6 +540,7 @@ def ingest(
     out_dir.mkdir(parents=True, exist_ok=True)
     for stale in (PROXY_NOPLATE, PROXY_PLATES_JSON):  # the plate blur restarts from the new proxy
         (out_dir / stale).unlink(missing_ok=True)
+    shutil.rmtree(out_dir / "frames", ignore_errors=True)  # rendered from the old sam.mp4
 
     src = probe_source(raw)
     detector = make_detector(model, (src.display_width, src.display_height))

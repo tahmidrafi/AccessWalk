@@ -1,4 +1,4 @@
-"""Inventory tests: track building, id stitching, cross-phrase dedupe. No video."""
+"""Inventory tests: track building, id stitching, cross-phrase dedupe, frame rendering."""
 from accesswalk.ingest import IngestMeta, SourceMeta, StreamMeta
 from accesswalk.inventory import build_tracks, find_duplicates, phrase_slug, stitch_ids
 from accesswalk.sam_parse import SamRecord
@@ -105,3 +105,25 @@ def test_review_masks_cover_get_track_samples_and_predecode_skips_cached(tmp_pat
     calls.clear()
     masks.decode_raster(tokens[0], tmp_path)
     assert calls == []  # review reads it back, no decode
+
+
+def test_render_frames_keeps_rendered_frames_until_plates_change(tmp_path):
+    import subprocess
+
+    from accesswalk.inventory import render_frames
+    from accesswalk.phrases import PLATE_PHRASE
+
+    m = _meta(5)
+    clip = tmp_path / m.video_sha256
+    clip.mkdir()
+    subprocess.run(["ffmpeg", "-hide_banner", "-v", "error", "-y", "-f", "lavfi", "-i",
+                    "testsrc=size=720x1280:rate=5:duration=1", "-pix_fmt", "yuv420p", str(clip / "sam.mp4")],
+                   check=True)
+    out = render_frames(m, {1, 3}, [], tmp_path)
+    assert sorted(out) == [1, 3]
+    out[1].write_bytes(b"as the agent saw it")
+    render_frames(m, {1, 2}, [], tmp_path)  # 1 kept as is, 2 rendered
+    assert out[1].read_bytes() == b"as the agent saw it" and (clip / "frames" / "2.jpg").exists()
+    plate = build_tracks(PLATE_PHRASE, [_rec(1, 0, 10, 10, 60, 40)], m)
+    render_frames(m, {1}, plate, tmp_path)  # plate boxes changed: everything re-rendered
+    assert out[1].read_bytes()[:2] == b"\xff\xd8" and not (clip / "frames" / "2.jpg").exists()
