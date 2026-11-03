@@ -39,8 +39,6 @@
     }
   ],
   "clean": [],
-  "not_applicable": [
-    "round_doorknob"
-  ],
-  "notes": "Curb between street and sidewalk has no curb cut (not a crossing, so not labelled). Sidewalk end at ~0:05 and ~0:21 is the same spot."
+  "not_applicable": [],
+  "notes": "Curb between street and sidewalk has no curb cut (not a crossing, so not labelled). Sidewalk end at ~0:05 and ~0:21 is the same spot. Door visible at ~0:10 for ~1s at distance, handle not distinguishable."
 }
