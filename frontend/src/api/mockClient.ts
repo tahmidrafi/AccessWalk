@@ -23,9 +23,13 @@ export const SCENARIOS: MockScenario[] = [
   { id: 'pipeline_error', label: 'Pipeline error (fails during review)' },
   { id: 'too_long', label: 'Upload rejected: video too long (400)' },
   { id: 'too_large', label: 'Upload rejected: file too large (413)' },
+  { id: 'passcode', label: 'Uploads need a passcode ("demo" works, others: 403)' },
 ]
 
-export type ScenarioId = 'success' | 'over_budget' | 'pipeline_error' | 'too_long' | 'too_large'
+export type ScenarioId = 'success' | 'over_budget' | 'pipeline_error' | 'too_long' | 'too_large' | 'passcode'
+
+/** The one passcode the mock's "passcode" scenario accepts. */
+export const MOCK_PASSCODE = 'demo'
 
 interface MockJob {
   job_id: string
@@ -157,10 +161,10 @@ export function createMockClient(now: () => number = Date.now): ApiClient {
   return {
     async health() {
       await wait(150)
-      return health as Health
+      return { ...health, uploads: scenario === 'passcode' ? 'passcode' : 'open' } as Health
     },
 
-    async createJob(video, title, onProgress, signal) {
+    async createJob(video, title, onProgress, signal, passcode) {
       // The server re-checks what the page already checked (type, size).
       const invalid = validateVideo(video, null)
       if (invalid) throw new ApiError(invalid.code === 'too_large' ? 413 : 415, invalid)
@@ -173,11 +177,14 @@ export function createMockClient(now: () => number = Date.now): ApiClient {
       if (scenario === 'too_large') {
         throw new ApiError(413, { code: 'too_large', message: 'video is over 300 MB' })
       }
+      if (scenario === 'passcode' && passcode !== MOCK_PASSCODE) {
+        throw new ApiError(403, { code: 'forbidden', message: 'uploads on this server need the passcode' })
+      }
       const job: MockJob = {
         job_id: `job-${Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0')}`,
         title: title?.trim().slice(0, 120) || null,
         created_ms: now(),
-        scenario,
+        scenario: scenario === 'passcode' ? 'success' : scenario,
       }
       jobs[job.job_id] = job
       saveJobs(jobs)

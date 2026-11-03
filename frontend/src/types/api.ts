@@ -5,13 +5,15 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Code = "bad_request" | "too_large" | "unsupported_media" | "not_found" | "over_budget" | "pipeline_error";
+export type Code =
+  "bad_request" | "too_large" | "unsupported_media" | "not_found" | "over_budget" | "pipeline_error" | "forbidden";
 export type Message = string;
 export type Ok = boolean;
 export type ApiVersion = string;
 export type AgentProvider = string;
 export type AgentModel = string;
 export type SamModel = string;
+export type Uploads = "open" | "passcode";
 export type JobId = string;
 export type State = "queued" | "running" | "done" | "failed";
 export type Stage = ("ingest" | "segment" | "inventory" | "review" | "report") | null;
@@ -63,6 +65,7 @@ export interface Health {
   agent_provider: AgentProvider;
   agent_model: AgentModel;
   sam_model: SamModel;
+  uploads?: Uploads;
   [k: string]: unknown;
 }
 /**

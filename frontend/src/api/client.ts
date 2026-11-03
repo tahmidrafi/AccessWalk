@@ -26,12 +26,14 @@ export interface MockScenario {
 export interface ApiClient {
   /** GET /api/health: which models serve the analysis. */
   health(): Promise<Health>
-  /** POST /api/jobs (multipart: video, title). Rejects with ApiError on 400/413/415. */
+  /** POST /api/jobs (multipart: video, title, passcode when Health.uploads is
+   * "passcode"). Rejects with ApiError on 400/403/413/415/429. */
   createJob(
     video: File,
     title: string | null,
     onProgress: (fraction: number) => void,
     signal: AbortSignal,
+    passcode?: string | null,
   ): Promise<JobStatus>
   /** GET /api/jobs/{job_id}. Rejects with ApiError(404, not_found). */
   getJob(jobId: string): Promise<JobStatus>

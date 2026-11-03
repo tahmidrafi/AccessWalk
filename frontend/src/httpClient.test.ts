@@ -68,6 +68,7 @@ describe('HTTP client: reads', () => {
     expect(toApiError(413, '<html>').error.code).toBe('too_large')
     expect(toApiError(422, { detail: [] }).error.code).toBe('bad_request')
     expect(toApiError(400, { error: { code: 'made_up', message: 'x' } }).error.code).toBe('bad_request')
+    expect(toApiError(403, '<html>').error.code).toBe('forbidden')
   })
 
   it('lets network failures through as TypeError (pages retry those)', async () => {
@@ -86,9 +87,9 @@ describe('HTTP client: reads', () => {
 })
 
 describe('HTTP client: upload', () => {
-  const upload = (signal = new AbortController().signal, progress: number[] = []) => {
+  const upload = (signal = new AbortController().signal, progress: number[] = [], passcode?: string | null) => {
     vi.stubGlobal('XMLHttpRequest', FakeXhr)
-    const p = createHttpClient().createJob(new File(['abc'], 'walk.mp4'), 'Main St', (f) => progress.push(f), signal)
+    const p = createHttpClient().createJob(new File(['abc'], 'walk.mp4'), 'Main St', (f) => progress.push(f), signal, passcode)
     return { p, xhr: FakeXhr.last, progress }
   }
 
@@ -108,6 +109,26 @@ describe('HTTP client: upload', () => {
     const { p, xhr } = upload()
     xhr.respond(413, { error: { code: 'too_large', message: 'video is over 300 MB' } })
     await expect(p).rejects.toMatchObject({ status: 413, error: { code: 'too_large' } })
+  })
+
+  it('sends the passcode as form field "passcode" only when given', async () => {
+    const withCode = upload(undefined, [], 'judge-code')
+    expect(withCode.xhr.body!.get('passcode')).toBe('judge-code')
+    withCode.xhr.respond(202, jobQueued)
+    await withCode.p
+    const without = upload()
+    expect(without.xhr.body!.has('passcode')).toBe(false)
+    without.xhr.respond(202, jobQueued)
+    await without.p
+  })
+
+  it('rejects with forbidden on 403 and over_budget on 429', async () => {
+    const refused = upload(undefined, [], 'wrong')
+    refused.xhr.respond(403, { error: { code: 'forbidden', message: 'uploads on this server need the passcode' } })
+    await expect(refused.p).rejects.toMatchObject({ status: 403, error: { code: 'forbidden' } })
+    const capped = upload()
+    capped.xhr.respond(429, { error: { code: 'over_budget', message: 'this server has used its model budget for now' } })
+    await expect(capped.p).rejects.toMatchObject({ status: 429, error: { code: 'over_budget' } })
   })
 
   it('aborts the request when cancelled', async () => {

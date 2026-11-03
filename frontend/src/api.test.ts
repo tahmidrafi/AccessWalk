@@ -1,7 +1,7 @@
 import Ajv from 'ajv'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from './api/client'
-import { MOCK_DONE_MS, createMockClient, mockJobAt } from './api/mockClient'
+import { MOCK_DONE_MS, MOCK_PASSCODE, createMockClient, mockJobAt } from './api/mockClient'
 import {
   ERROR_HELP,
   STAGES,
@@ -133,6 +133,31 @@ describe('mock client', () => {
     ctrl.abort()
     await vi.runAllTimersAsync()
     await aborted
+  })
+
+  it('asks for a passcode in the passcode scenario and refuses a wrong one with 403', async () => {
+    const api = createMockClient()
+    const open = api.health()
+    await vi.runAllTimersAsync()
+    expect((await open).uploads).toBe('open')
+    api.mock!.setScenario('passcode')
+    const h = api.health()
+    await vi.runAllTimersAsync()
+    expect((await h).uploads).toBe('passcode')
+    expectValid('Health', await h)
+
+    const file = new File(['x'], 'walk.mp4')
+    const wrong = api.createJob(file, null, () => {}, new AbortController().signal, 'guess')
+    const refused = expect(wrong).rejects.toMatchObject({ status: 403, error: { code: 'forbidden' } })
+    await vi.runAllTimersAsync()
+    await refused
+    const none = api.createJob(file, null, () => {}, new AbortController().signal)
+    const refusedToo = expect(none).rejects.toMatchObject({ status: 403 })
+    await vi.runAllTimersAsync()
+    await refusedToo
+    const right = api.createJob(file, null, () => {}, new AbortController().signal, MOCK_PASSCODE)
+    await vi.runAllTimersAsync()
+    expect(await right).toMatchObject({ state: 'queued' })
   })
 
   it('returns 404 not_found for unknown jobs and reports', async () => {
