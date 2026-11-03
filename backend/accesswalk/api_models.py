@@ -8,8 +8,11 @@ Routes (all JSON unless noted; errors are ``ErrorResponse`` with the HTTP status
 
   GET  /api/health                      -> Health
   POST /api/jobs   multipart: video (mp4/mov, <= MAX_UPLOAD_MB, <= MAX_DURATION_S),
-                   title (optional str)  -> 202 JobStatus (state "queued")
+                   title (optional str), passcode (str, when Health.uploads == "passcode")
+                                         -> 202 JobStatus (state "queued")
                                             400 bad_request · 413 too_large · 415 unsupported_media
+                                            403 forbidden (passcode missing or wrong)
+                                            429 over_budget (server's daily or total spend cap)
   GET  /api/jobs/{job_id}               -> JobStatus                    404 not_found
   GET  /api/reports                     -> ReportList (newest first)
   GET  /api/reports/{report_id}         -> schemas.Report (report.schema.json)   404 not_found
@@ -22,7 +25,8 @@ Job lifecycle: ``queued -> running -> done`` or ``-> failed``. While running,
 inventory -> review (agent) -> report. Poll ``GET /api/jobs/{id}`` about every 2 s;
 when ``state == "done"``, ``report_url`` points at the report. A job whose
 estimated model cost exceeds the server budget fails with error code ``over_budget``
-before any paid call.
+before any paid call. A deployed server may also cap spend per day and in total
+across all jobs; an upload that would cross a cap is refused with 429 ``over_budget``.
 """
 from __future__ import annotations
 
@@ -39,8 +43,10 @@ MAX_DURATION_S = 120
 JobState = Literal["queued", "running", "done", "failed"]
 JobStage = Literal["ingest", "segment", "inventory", "review", "report"]
 ErrorCode = Literal[
-    "bad_request", "too_large", "unsupported_media", "not_found", "over_budget", "pipeline_error"
+    "bad_request", "too_large", "unsupported_media", "not_found", "over_budget", "pipeline_error",
+    "forbidden",
 ]
+UploadMode = Literal["open", "passcode"]
 
 
 class Health(BaseModel):
@@ -49,6 +55,8 @@ class Health(BaseModel):
     agent_provider: str  # primary host, e.g. "baseten"
     agent_model: str  # e.g. "meta-models/muse-spark-open-1026"
     sam_model: str
+    # "passcode": POST /api/jobs needs the form field ``passcode`` (the deployed demo server)
+    uploads: UploadMode = "open"
 
 
 class JobError(BaseModel):

@@ -10,6 +10,11 @@ Spend guard: before any paid call the pipeline estimates SAM cost for the clip
 ``over_budget`` if that exceeds ``ACCESSWALK_MAX_JOB_USD`` (default $1). The agent
 runs open-weight only (Baseten, then Fireworks); the closed fallback is never
 enabled from the API.
+
+Deploy-wide caps (d7-deploy): ``ACCESSWALK_MAX_TOTAL_USD`` over all jobs and
+``ACCESSWALK_MAX_DAILY_USD`` over jobs created that UTC day, counted from the job
+records (cache hits cost $0). Unset = no cap. ``ACCESSWALK_DELETE_UPLOADS=1``
+deletes each raw upload (it keeps the phone's GPS) once its job ends.
 """
 from __future__ import annotations
 
@@ -75,6 +80,10 @@ class JobStore:
         with self._lock:
             return self._jobs.get(job_id)
 
+    def all(self) -> list[JobStatus]:
+        with self._lock:
+            return list(self._jobs.values())
+
     def update(self, job_id: str, **fields) -> JobStatus:
         with self._lock:
             job = self._jobs[job_id].model_copy(update={**fields, "updated_at": _now()})
@@ -85,6 +94,27 @@ class JobStore:
         with self._lock:
             self._jobs[job.job_id] = job
             (self.root / f"{job.job_id}.json").write_text(job.model_dump_json(indent=2), encoding="utf-8")
+
+
+def _cap(name: str) -> float | None:
+    v = os.getenv(name, "").strip()
+    return float(v) if v else None
+
+
+def spend_left_usd(store: JobStore, today: str | None = None) -> float:
+    """USD the deploy-wide caps still allow. A job not finished yet reserves a full
+    job budget (or what it has spent, if more), so queued uploads can't overshoot."""
+    today = today or _now()[:10]
+    total = day = 0.0
+    for j in store.all():
+        cost = j.cost_usd or 0.0
+        if j.state in ("queued", "running"):
+            cost = max(cost, max_job_usd())
+        total += cost
+        day += cost if j.created_at[:10] == today else 0.0
+    left = [cap - spent for cap, spent in ((_cap("ACCESSWALK_MAX_TOTAL_USD"), total),
+                                           (_cap("ACCESSWALK_MAX_DAILY_USD"), day)) if cap is not None]
+    return min(left, default=float("inf"))
 
 
 # A pipeline turns a raw upload into a Report, reporting progress through ``update``.
@@ -148,6 +178,9 @@ def run_job(store: JobStore, job_id: str, raw: Path, pipeline: Pipeline,
     except Exception as e:  # keep the server up; the job says what broke
         store.update(job_id, state="failed", stage=stage[0], message="Pipeline error",
                      error=JobError(code="pipeline_error", message=f"{type(e).__name__}: {str(e)[:300]}"))
+    finally:
+        if os.getenv("ACCESSWALK_DELETE_UPLOADS") == "1":
+            raw.unlink(missing_ok=True)
 
 
 def list_reports(reports_dir: Path = REPORTS_DIR) -> list[Report]:

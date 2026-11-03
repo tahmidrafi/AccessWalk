@@ -34,6 +34,15 @@
         "sam_model": {
           "title": "Sam Model",
           "type": "string"
+        },
+        "uploads": {
+          "default": "open",
+          "enum": [
+            "open",
+            "passcode"
+          ],
+          "title": "Uploads",
+          "type": "string"
         }
       },
       "required": [
@@ -54,7 +63,8 @@
             "unsupported_media",
             "not_found",
             "over_budget",
-            "pipeline_error"
+            "pipeline_error",
+            "forbidden"
           ],
           "title": "Code",
           "type": "string"

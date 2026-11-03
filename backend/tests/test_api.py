@@ -118,3 +118,59 @@ def test_restart_marks_unfinished_jobs_failed(tmp_path):
     st.update(job.job_id, state="running", stage="segment")
     again = jobs.JobStore(tmp_path / "jobs").get(job.job_id)
     assert again.state == "failed" and again.error.code == "pipeline_error"
+
+
+def test_passcode_guards_uploads_only(tmp_path, tiny_mp4, monkeypatch):
+    monkeypatch.setenv("ACCESSWALK_UPLOAD_PASSCODE", "open-sesame")
+    c = _client(tmp_path)
+    assert c.get("/api/health").json()["uploads"] == "passcode"
+    files = {"video": ("walk.mp4", tiny_mp4.read_bytes(), "video/mp4")}
+    for data in [{}, {"passcode": "wrong"}]:
+        r = c.post("/api/jobs", files=files, data=data)
+        assert r.status_code == 403 and r.json()["error"]["code"] == "forbidden"
+    assert not any((tmp_path / "uploads").glob("*")) and not any((tmp_path / "jobs").glob("*"))
+    assert c.get("/api/reports").status_code == 200  # reading stays public
+    assert c.post("/api/jobs", files=files, data={"passcode": "open-sesame"}).status_code == 202
+
+
+def test_spend_caps_refuse_uploads_once_spent(tmp_path, tiny_mp4, monkeypatch):
+    monkeypatch.setenv("ACCESSWALK_MAX_TOTAL_USD", "1.15")
+    monkeypatch.setenv("ACCESSWALK_MAX_JOB_USD", "1.0")
+    c = _client(tmp_path)  # fake pipeline records $0.10 per job
+    files = {"video": ("walk.mp4", tiny_mp4.read_bytes(), "video/mp4")}
+    assert c.post("/api/jobs", files=files).status_code == 202  # $1.05 left
+    assert c.post("/api/jobs", files=files).status_code == 202  # $0.95 left: next one could overshoot
+    r = c.post("/api/jobs", files=files)
+    assert r.status_code == 429 and r.json()["error"]["code"] == "over_budget"
+
+
+def test_spend_left_counts_today_and_reserves_unfinished_jobs(tmp_path, monkeypatch):
+    monkeypatch.setenv("ACCESSWALK_MAX_DAILY_USD", "2")
+    monkeypatch.setenv("ACCESSWALK_MAX_TOTAL_USD", "10")
+    monkeypatch.setenv("ACCESSWALK_MAX_JOB_USD", "1")
+    st = jobs.JobStore(tmp_path / "jobs")
+    old = st.create("yesterday")
+    st._save(old.model_copy(update={"created_at": "2026-11-01T10:00:00+00:00", "state": "done",
+                                    "cost_usd": 5.0}))
+    st.update(st.create("today").job_id, state="done", cost_usd=0.4)
+    st.create("queued")  # reserves a full job
+    assert jobs.spend_left_usd(st) == pytest.approx(2 - 0.4 - 1.0)
+    monkeypatch.delenv("ACCESSWALK_MAX_DAILY_USD")
+    assert jobs.spend_left_usd(st) == pytest.approx(10 - 5.0 - 0.4 - 1.0)
+    monkeypatch.delenv("ACCESSWALK_MAX_TOTAL_USD")
+    assert jobs.spend_left_usd(st) == float("inf")
+
+
+def test_frontend_is_served_with_spa_fallback(tmp_path, monkeypatch):
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<!doctype html>app")
+    (dist / "assets" / "app.js").write_text("js")
+    (tmp_path / "secret.txt").write_text("not served")
+    monkeypatch.setenv("ACCESSWALK_FRONTEND_DIR", str(dist))
+    c = _client(tmp_path)
+    assert c.get("/assets/app.js").text == "js"
+    for route in ["/", "/reports/abc-123", "/jobs/job-1"]:
+        assert c.get(route).text == "<!doctype html>app", route
+    assert c.get("/..%2Fsecret.txt").text == "<!doctype html>app"
+    assert c.get("/api/nope").status_code == 404 and c.get("/api/health").json()["ok"]

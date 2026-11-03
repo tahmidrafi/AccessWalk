@@ -45,6 +45,7 @@ navigation for blind users. Say "likely barrier" / "verify manually", never "vio
 backend/accesswalk/   Python package: ingest, sam client, inventory, agent, transcribe, report, api (FastAPI)
 frontend/             React (Vite) report UI — Session B, from Oct 29
 eval/                 eval harness: precision/recall per check, baseline comparison
+deploy/               Modal app (API + built UI on one URL); data via scripts/deploy_bundle.py
 data/annotations/     ground-truth JSON per clip (committed)
 data/raw/             source videos (git-ignored)
 data/cache/           cached model outputs keyed by video hash (git-ignored)
@@ -61,7 +62,7 @@ No git repo existed before Oct 28: first action is `git init` + initial commit o
 - Append one line per session to the Log section: date, what changed, anything blocked.
 
 ## Parallel Claude Code sessions (from Thu 10/29)
-- **Session A (pipeline):** owns `backend/`, `eval/`, `scripts/`, `data/annotations/`, this file.
+- **Session A (pipeline):** owns `backend/`, `eval/`, `scripts/`, `deploy/`, `data/annotations/`, this file.
 - **Session B (frontend):** owns `frontend/` only. Builds against `frontend/src/mock/report.json`.
 - The contract is `backend/accesswalk/schemas.py` (pydantic `Finding`, `Track`, `Report`) plus the exported
   JSON Schema in `frontend/src/schema/report.schema.json`. Only Session A changes schemas; it regenerates the

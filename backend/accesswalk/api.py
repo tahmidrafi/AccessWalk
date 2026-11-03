@@ -7,9 +7,15 @@ plates blurred), rendered ``frames/<i>.jpg``
 (faces + plates blurred) and ``masks/<name>.png``. Paths are matched against a
 fixed pattern, so nothing else under data/ (raw uploads with GPS, caches) is
 reachable. Raw uploads go to data/raw/uploads/ and are never served.
+
+Deployed demo (d7-deploy): ``ACCESSWALK_UPLOAD_PASSCODE`` makes uploads need the
+form field ``passcode`` (everything else stays public and read-only), the spend caps
+in jobs.py refuse uploads once spent, and ``ACCESSWALK_FRONTEND_DIR`` serves the
+built report UI (frontend/dist) from this app, so page and API share one origin.
 """
 from __future__ import annotations
 
+import hmac
 import os
 import re
 from concurrent.futures import Executor, ThreadPoolExecutor
@@ -80,15 +86,23 @@ def create_app(
     @app.get("/api/health", response_model=Health)
     def health() -> Health:
         p = llm.providers_from_env()["baseten"]
-        return Health(ok=True, agent_provider=p.name, agent_model=p.model, sam_model=sam.MODEL)
+        return Health(ok=True, agent_provider=p.name, agent_model=p.model, sam_model=sam.MODEL,
+                      uploads="passcode" if os.getenv("ACCESSWALK_UPLOAD_PASSCODE") else "open")
 
     @app.post("/api/jobs", response_model=JobStatus, status_code=202)
     def create_job(video: Annotated[UploadFile, File()],
-                   title: Annotated[str | None, Form()] = None) -> JobStatus:
+                   title: Annotated[str | None, Form()] = None,
+                   passcode: Annotated[str | None, Form()] = None) -> JobStatus:
         ext = Path(video.filename or "").suffix.lower()
         if ext not in VIDEO_TYPES:
             raise ApiError(415, "unsupported_media", "upload an .mp4 or .mov video")
+        expected = os.getenv("ACCESSWALK_UPLOAD_PASSCODE")
+        if expected and not hmac.compare_digest((passcode or "").encode(), expected.encode()):
+            raise ApiError(403, "forbidden", "uploads on this server need the passcode")
         st = get_store()
+        if jobs.spend_left_usd(st) < jobs.max_job_usd():
+            raise ApiError(429, "over_budget", "this server has used its model budget for now; "
+                                               "try the sample route, or upload again tomorrow")
         job = st.create(title=(title or "").strip()[:120] or None)
         upload_dir.mkdir(parents=True, exist_ok=True)
         raw = upload_dir / f"{job.job_id}{ext}"
@@ -155,6 +169,19 @@ def create_app(
             raise ApiError(404, "not_found", "no such media")
         ctype = {".mp4": "video/mp4", ".jpg": "image/jpeg", ".png": "image/png"}[file.suffix]
         return FileResponse(file, media_type=ctype)  # Starlette answers Range requests with 206
+
+    if frontend_dir := os.getenv("ACCESSWALK_FRONTEND_DIR"):
+        dist = Path(frontend_dir).resolve()
+
+        @app.get("/{path:path}", include_in_schema=False)
+        def page(path: str) -> FileResponse:
+            # Built assets by name; any other path is a client route (/reports/<id>, /jobs/<id>).
+            if path.startswith(("api/", "media/")):
+                raise ApiError(404, "not_found", f"no route /{path}")
+            file = (dist / path).resolve()
+            if path and file.is_file() and file.is_relative_to(dist):
+                return FileResponse(file)
+            return FileResponse(dist / "index.html")
 
     return app
 
