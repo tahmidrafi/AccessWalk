@@ -2,7 +2,15 @@ import type { Health, JobError, JobStatus, ReportList } from '../types/api'
 import type { Report } from '../types/report'
 import { ApiError, type ApiClient } from './client'
 
-const CODES: JobError['code'][] = ['bad_request', 'too_large', 'unsupported_media', 'not_found', 'over_budget', 'pipeline_error']
+const CODES: JobError['code'][] = [
+  'bad_request',
+  'too_large',
+  'unsupported_media',
+  'not_found',
+  'over_budget',
+  'pipeline_error',
+  'forbidden',
+]
 
 /** Turn a non-2xx response body into an ApiError: the API's ErrorResponse when it
  * is one, else a code from the HTTP status (e.g. a proxy's 502 page). */
@@ -12,7 +20,7 @@ export function toApiError(status: number, body: unknown): ApiError {
     return new ApiError(status, { code: err.code as JobError['code'], message: err.message })
   }
   const code: JobError['code'] =
-    status === 404 ? 'not_found' : status === 413 ? 'too_large' : status === 415 ? 'unsupported_media' : status >= 500 ? 'pipeline_error' : 'bad_request'
+    status === 403 ? 'forbidden' : status === 404 ? 'not_found' : status === 413 ? 'too_large' : status === 415 ? 'unsupported_media' : status >= 500 ? 'pipeline_error' : 'bad_request'
   return new ApiError(status, { code, message: `The server answered HTTP ${status}.` })
 }
 
@@ -62,7 +70,7 @@ export function createHttpClient(base = ''): ApiClient {
     getReport: async (reportUrl) => withMediaBase(await getJson<Report>(reportUrl), base),
 
     // XMLHttpRequest, not fetch: fetch has no upload progress events.
-    createJob(video, title, onProgress, signal) {
+    createJob(video, title, onProgress, signal, passcode) {
       return new Promise<JobStatus>((resolve, reject) => {
         if (signal.aborted) {
           reject(new DOMException('Upload cancelled', 'AbortError'))
@@ -89,6 +97,7 @@ export function createHttpClient(base = ''): ApiClient {
         const form = new FormData()
         form.append('video', video, video.name)
         if (title) form.append('title', title)
+        if (passcode) form.append('passcode', passcode)
         xhr.send(form)
       })
     },

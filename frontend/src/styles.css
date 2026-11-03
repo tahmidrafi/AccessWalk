@@ -854,6 +854,7 @@ h1[tabindex='-1']:focus {
   color: var(--muted);
 }
 input[type='text'],
+input[type='password'],
 select {
   width: 100%;
   max-width: 32rem;

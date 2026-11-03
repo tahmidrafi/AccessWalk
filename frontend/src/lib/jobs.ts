@@ -94,6 +94,30 @@ export const ERROR_HELP: Record<JobError['code'], { title: string; advice: strin
     title: 'The analysis stopped with an error',
     advice: 'This is a problem on our side, not with your video. Try uploading it again in a few minutes.',
   },
+  forbidden: {
+    title: 'The upload passcode was not accepted',
+    advice:
+      'Judges can find the passcode in the submission notes. Check it and upload again, or try the sample route, which needs no passcode.',
+  },
+}
+
+/** Where an upload is refused, some codes mean something else than for a job:
+ * over_budget at POST /api/jobs is the server's spend cap, not this video's cost. */
+const UPLOAD_ERROR_HELP: Partial<typeof ERROR_HELP> = {
+  over_budget: {
+    title: 'Uploads are paused on this server',
+    advice:
+      'This server has used its model budget, so it cannot analyse new videos for now. Nothing was charged. Try the sample route to see a finished report.',
+  },
+}
+
+export function uploadErrorHelp(code: JobError['code']): { title: string; advice: string } {
+  return UPLOAD_ERROR_HELP[code] ?? ERROR_HELP[code]
+}
+
+/** Upload refusals the sample route is the way around. */
+export function suggestsSample(code: JobError['code']): boolean {
+  return code === 'forbidden' || code === 'over_budget'
 }
 
 /** Client-side checks before uploading; the server checks again. */

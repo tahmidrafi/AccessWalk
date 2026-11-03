@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type Ref } from 'react'
 import { ApiError, type ApiClient } from '../api/client'
 import {
-  ERROR_HELP,
   MAX_DURATION_S,
   MAX_UPLOAD_MB,
   asSentence,
@@ -9,6 +8,8 @@ import {
   pickSampleReport,
   readDurationS,
   reportPagePath,
+  suggestsSample,
+  uploadErrorHelp,
   validateVideo,
 } from '../lib/jobs'
 import { RATING_TEXT } from '../lib/labels'
@@ -28,6 +29,11 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
 
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
+  // Held in this component only: never stored, never put in the URL.
+  const [passcode, setPasscode] = useState('')
+  const [passcodeError, setPasscodeError] = useState<string | null>(null)
+  // Health says so, or the server refused an upload for want of one (health failed).
+  const [passcodeRequired, setPasscodeRequired] = useState(false)
   const [fieldError, setFieldError] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<JobError | null>(null)
   const [progress, setProgress] = useState<number | null>(null) // null: not uploading
@@ -40,6 +46,7 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
   const alertRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
+  const passcodeRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     let live = true
@@ -48,7 +55,11 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
       () => live && setListFailed(true),
     )
     api.health().then(
-      (h) => live && setHealth(h),
+      (h) => {
+        if (!live) return
+        setHealth(h)
+        setPasscodeRequired(h.uploads === 'passcode')
+      },
       () => live && setHealth(null),
     )
     return () => {
@@ -82,12 +93,24 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
       return
     }
     setFieldError(null)
+    if (passcodeRequired && !passcode) {
+      setPasscodeError('Enter the upload passcode.')
+      passcodeRef.current?.focus()
+      return
+    }
+    setPasscodeError(null)
     const ctrl = new AbortController()
     abortRef.current = ctrl
     setProgress(0)
     setAnnouncement('Upload started.')
     try {
-      const job = await api.createJob(file, title.trim() || null, setProgress, ctrl.signal)
+      const job = await api.createJob(
+        file,
+        title.trim() || null,
+        setProgress,
+        ctrl.signal,
+        passcodeRequired ? passcode : null,
+      )
       setAnnouncement('Upload complete.')
       navigate(`/jobs/${job.job_id}`)
     } catch (err) {
@@ -97,6 +120,7 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
         return
       }
       setAnnouncement('')
+      if (err instanceof ApiError && err.error.code === 'forbidden') setPasscodeRequired(true)
       setUploadError(
         err instanceof ApiError
           ? err.error
@@ -152,9 +176,14 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
 
       {uploadError && (
         <div className="alert" role="alert" tabIndex={-1} ref={alertRef} aria-labelledby="upload-error-title">
-          <h2 id="upload-error-title">{ERROR_HELP[uploadError.code].title}</h2>
+          <h2 id="upload-error-title">{uploadErrorHelp(uploadError.code).title}</h2>
           <p>{asSentence(uploadError.message)}</p>
-          <p>{ERROR_HELP[uploadError.code].advice}</p>
+          <p>{uploadErrorHelp(uploadError.code).advice}</p>
+          {sample && suggestsSample(uploadError.code) && (
+            <p>
+              <Link to={reportPagePath(sample.report_url)}>Open the sample route</Link>
+            </p>
+          )}
         </div>
       )}
 
@@ -210,6 +239,20 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
           />
         </div>
 
+        {passcodeRequired && (
+          <PasscodeField
+            inputRef={passcodeRef}
+            value={passcode}
+            error={passcodeError}
+            refused={uploadError?.code === 'forbidden'}
+            disabled={uploading}
+            onChange={(v) => {
+              setPasscode(v)
+              setPasscodeError(null)
+            }}
+          />
+        )}
+
         {api.mock && (
           <details className="dev-options">
             <summary>Demo outcome</summary>
@@ -221,6 +264,14 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
               onChange={(e) => {
                 api.mock?.setScenario(e.target.value)
                 setScenario(e.target.value)
+                // Scenarios can change what health says (uploads: passcode).
+                api.health().then(
+                  (h) => {
+                    setHealth(h)
+                    setPasscodeRequired(h.uploads === 'passcode')
+                  },
+                  () => {},
+                )
               }}
             >
               {api.mock.scenarios.map((s) => (
@@ -288,5 +339,49 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
         </p>
       )}
     </>
+  )
+}
+
+interface PasscodeFieldProps {
+  value: string
+  /** Client-side check, e.g. left empty. */
+  error: string | null
+  /** The server answered 403 forbidden to the last upload. */
+  refused?: boolean
+  disabled?: boolean
+  onChange: (value: string) => void
+  inputRef?: Ref<HTMLInputElement>
+}
+
+/** Shown when Health.uploads is "passcode": POST /api/jobs then needs form field ``passcode``. */
+export function PasscodeField({ value, error, refused = false, disabled, onChange, inputRef }: PasscodeFieldProps) {
+  const describedBy = ['passcode-hint', error ? 'passcode-error' : null].filter(Boolean).join(' ')
+  return (
+    <div className={`field${error || refused ? ' field-invalid' : ''}`}>
+      <label htmlFor="passcode">Upload passcode</label>
+      <p id="passcode-hint" className="hint">
+        Judges: see the submission notes. Uploads on this server need the passcode; the sample route needs none.
+      </p>
+      <input
+        ref={inputRef}
+        id="passcode"
+        name="passcode"
+        type="password"
+        required
+        autoComplete="off"
+        spellCheck={false}
+        aria-describedby={describedBy}
+        aria-invalid={error || refused ? true : undefined}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      {error && (
+        <p id="passcode-error" className="field-error">
+          <span aria-hidden="true">✕ </span>
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
