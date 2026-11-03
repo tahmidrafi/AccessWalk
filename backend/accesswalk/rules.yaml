@@ -20,8 +20,8 @@
 checks:
   sidewalk_obstruction:
     title: Sidewalk obstruction
-    question: Does an object stand ON the walking surface and block part of its width?
-    evidence_phrases: [trash bin, car, pole, construction barrier, traffic barrel]
+    question: Does an object stand or lie ON the walking surface (a fallen branch included) and block part of its width?
+    evidence_phrases: [trash bin, car, pole, construction barrier, traffic barrel, overgrown vegetation]
     judged_from: track
     verify_manually: always
     severity:
@@ -30,7 +30,8 @@ checks:
       low: intrudes on the edge but leaves a wide path
     reference: "2010 ADA Standards 403.5.1: 36 in minimum clear width of walking surfaces"
     pitfalls:
-      - cars parked or driving on the road, not on the sidewalk
+      - cars parked or driving on the road, not on or over the sidewalk (a car body overhanging the walkway edge is a narrow_passage)
+      - vegetation growing in from the edge is a narrow_passage; only branches or growth lying across the walkway are an obstruction
       - bins and poles in the planting strip or beside the walkway
       - door frames boxed as "pole"
 
@@ -125,8 +126,8 @@ checks:
 
   narrow_passage:
     title: Narrow passage
-    question: Is the clear walking width squeezed by vegetation, poles, or objects at the edges?
-    evidence_phrases: [overgrown vegetation, pole, trash bin, sidewalk]
+    question: Is the clear walking width squeezed by vegetation, poles, parked cars overhanging the edge, or objects at the edges?
+    evidence_phrases: [overgrown vegetation, pole, trash bin, sidewalk, car]
     judged_from: track
     verify_manually: always
     severity:
@@ -136,3 +137,6 @@ checks:
     reference: "2010 ADA Standards 403.5.1: 36 in clear width (32 in for at most 24 in of length); 2023 PROWAG R302.3: 4 ft"
     pitfalls:
       - grass and leaves lying flat on the walkway edge do not reduce the clear width
+      - something lying across the walkway (a fallen branch, debris) is a sidewalk_obstruction, not a narrow passage
+      - "a car's on_sidewalk share measures where its tyres touch: a car parked beside the walkway with its bumper or body over the walkway reads 0.0, so judge overhang from the frame"
+      - cars parked in a lot or on the street that stay clear of the walkway edge

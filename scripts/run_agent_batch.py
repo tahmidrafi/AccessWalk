@@ -3,6 +3,8 @@ never findings or verdicts (the owner annotates blind). Stats also go to
 data/out/agent_batch.json; reports to data/out/reports/<clip>.json.
 
   micromamba run -n accesswalk python scripts/run_agent_batch.py --per-clip 0.5 --total 5
+  ... --out data/out/reports_v2 --clip PXL_...   # an eval run: keeps data/out/reports
+                                                 # (the pinned sample report) untouched
 
 Spend is read back from usage.jsonl, so it includes the agent's SAM rechecks, which
 run_agent's own budget does not see; RECHECK_MARGIN keeps a clip under its cap anyway.
@@ -42,7 +44,7 @@ def _rejection_kind(reason: str) -> str:
     return " ".join(reason.split()[:4]).split("'")[0].strip()
 
 
-def run_clip(stem: str, cap: float) -> dict:
+def run_clip(stem: str, cap: float, out_dir: Path = OUT_DIR) -> dict:
     path = Path(usage.DEFAULT_USAGE_LOG)
     offset = path.stat().st_size if path.exists() else 0
     start = time.time()
@@ -50,8 +52,8 @@ def run_clip(stem: str, cap: float) -> dict:
     try:
         ctx = agent.load_context(stem)
         res = agent.run_agent(ctx, allow_closed=False, max_cost_usd=max(0.0, cap - RECHECK_MARGIN))
-        OUT_DIR.mkdir(parents=True, exist_ok=True)
-        (OUT_DIR / f"{stem}.json").write_text(res.report.model_dump_json(indent=2), encoding="utf-8")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / f"{stem}.json").write_text(res.report.model_dump_json(indent=2), encoding="utf-8")
         kinds: dict[str, int] = {}
         for rej in res.rejections:
             k = _rejection_kind(rej.reason)
@@ -77,6 +79,8 @@ def main() -> int:
     ap.add_argument("--per-clip", type=float, required=True)
     ap.add_argument("--total", type=float, required=True)
     ap.add_argument("--clip", action="append", help="raw clip stem; default: all of data/raw")
+    ap.add_argument("--out", type=Path, default=OUT_DIR, help="report directory")
+    ap.add_argument("--stats", type=Path, default=STATS)
     args = ap.parse_args()
     stems = args.clip or sorted(p.stem for p in RAW_DIR.glob("*.mp4"))
     rows, spent = [], 0.0
@@ -86,10 +90,10 @@ def main() -> int:
             rows.append({"clip": stem, "error": "not run: total budget reached", "cost_usd": 0.0})
             print(f"{stem}: NOT RUN, ${spent:.4f} of ${args.total} spent", flush=True)
             continue
-        row = run_clip(stem, min(args.per_clip, left))
+        row = run_clip(stem, min(args.per_clip, left), args.out)
         spent += row["cost_usd"]
         rows.append(row)
-        STATS.write_text(json.dumps({"spent_usd": round(spent, 4), "clips": rows}, indent=2),
+        args.stats.write_text(json.dumps({"spent_usd": round(spent, 4), "clips": rows}, indent=2),
                          encoding="utf-8")
         hosts = {h: row.get("hosts", []).count(h) for h in set(row.get("hosts", []))}
         print(f"{stem}: turns {row.get('turns')} finished {row.get('finished')} ${row['cost_usd']:.4f} "

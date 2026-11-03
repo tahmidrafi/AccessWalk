@@ -50,7 +50,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RUN_LOG = REPO_ROOT / "data" / "out" / "agent_runs.jsonl"
 MAX_TURNS = 20
 MAX_RECHECKS = 2
-MAX_VIEWS = 12
+MAX_VIEWS = 16
 # Baseten rejects a request carrying more than 8 images (400 "Too many images", Oct 29),
 # so only the latest MAX_IMAGES views travel as images; older ones stay as their captions.
 MAX_IMAGES = 8
