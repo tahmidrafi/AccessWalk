@@ -41,6 +41,7 @@ export interface ApiClient {
   getReport(reportUrl: string): Promise<Report>
   /** Present on the mock client only. */
   mock?: {
+    sampleReportId: string
     scenarios: MockScenario[]
     scenario: () => string
     setScenario: (id: string) => void

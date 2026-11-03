@@ -158,23 +158,14 @@ describe('job helpers', () => {
     expect(validateVideo({ name: 'walk.mp4', size: 1 }, 121)?.code).toBe('bad_request')
   })
 
-  it('picks the newest report with findings as the sample', () => {
-    const r = (report_id: string, created_at: string, n_findings: number) => ({
-      report_id,
-      title: report_id,
-      video_sha256: 'x',
-      created_at,
-      rating: 'caution' as const,
-      n_findings,
-      report_url: `/api/reports/${report_id}`,
-    })
-    const old = r('old', '2026-10-29T10:00:00+00:00', 2)
-    const newer = r('newer', '2026-10-30T10:00:00+00:00', 1)
-    const clean = r('clean', '2026-10-30T12:00:00+00:00', 0)
-    expect(pickSampleReport([old, newer, clean])?.report_id).toBe('newer')
-    expect(pickSampleReport([clean])?.report_id).toBe('clean')
-    expect(pickSampleReport([])).toBeNull()
-    expect(pickSampleReport(reports.reports as ReportSummary[])?.report_url).toBe(reports.reports[0].report_url)
+  it('picks the pinned sample report, never another one', () => {
+    const list = reports.reports as ReportSummary[]
+    const pinned = list[0].report_id
+    expect(pickSampleReport(list, pinned)?.report_id).toBe(pinned)
+    expect(pickSampleReport(list, ` ${pinned}
+`)?.report_id).toBe(pinned)
+    expect(pickSampleReport(list, 'no-such-report')).toBeNull()
+    expect(pickSampleReport([], pinned)).toBeNull()
   })
 
   it('states the expected time in words a screen reader reads correctly', () => {

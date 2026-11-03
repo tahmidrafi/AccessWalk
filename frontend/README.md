@@ -93,8 +93,10 @@ after ingest, nothing charged), pipeline error (during review), or an upload
 rejected with 400 or 413. A finished job links to its report via `report_url`.
 
 For the live demo, "Try a sample route" on the upload page opens a finished report
-straight away, with no upload: the newest one in the report list that has findings
-(`pickSampleReport`). If the list can't be loaded the page says so. The expected
+straight away, with no upload: the report pinned by `VITE_SAMPLE_REPORT_ID` (set it at
+build time; the mock falls back to its own report). With the real API and no pin there
+is no entry. If the pinned report isn't in the list, or the list can't be loaded, the
+page says so and never opens a different report. The expected
 processing time next to the upload button comes from `EXPECTED_PROCESSING` in
 `src/lib/jobs.ts`, a fixed estimate for now.
 

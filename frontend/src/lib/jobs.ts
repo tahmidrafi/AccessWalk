@@ -15,10 +15,9 @@ export function expectedProcessingText(e = EXPECTED_PROCESSING): string {
   return `Analysis takes about ${e.minMinutes} to ${e.maxMinutes} minutes for a ${e.clipSeconds}-second clip.`
 }
 
-/** The report behind "Try a sample route": the newest one with findings, else the newest. */
-export function pickSampleReport(reports: ReportSummary[]): ReportSummary | null {
-  const newestFirst = [...reports].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
-  return newestFirst.find((r) => r.n_findings > 0) ?? newestFirst[0] ?? null
+/** The report behind "Try a sample route": the one pinned in config, if it is in the list. */
+export function pickSampleReport(reports: ReportSummary[], reportId: string): ReportSummary | null {
+  return reports.find((r) => r.report_id === reportId.trim()) ?? null
 }
 
 export type StageId = NonNullable<JobStatus['stage']>

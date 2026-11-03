@@ -204,6 +204,7 @@ export function createMockClient(now: () => number = Date.now): ApiClient {
     },
 
     mock: {
+      sampleReportId: reports.reports[0].report_id,
       scenarios: SCENARIOS,
       scenario: () => scenario,
       setScenario: (id) => {
