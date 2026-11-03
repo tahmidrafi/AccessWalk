@@ -74,6 +74,7 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 - [x] `d9-passcode-ui` Upload page: passcode field (sent as form field `passcode` when `Health.uploads == "passcode"`), advice for the new `forbidden` error code, regenerate types (Frontend, B) -- merged 761cbd9, live Nov 3; wrong passcode shows a clear message (checked live), Lighthouse not run
 - [x] `d9-eval-onetoone` Eval matching one-to-one: a finding hits at most one barrier, assignment maximises hits (Pipeline, A) -- test added; overlapping rows no longer double-count
 - [x] `d9-rules-v2` Rules: parked-car overhang counts as narrow_passage (car citable, on_sidewalk note), vegetation lying across the walk counts as obstruction, 16 frame views; agent run v2 on the 11 Oct-29 clips (Pipeline, A) -- frozen as v2 ($1.96); branch fix works, overhang fix cited no car
+- [~] `d9-hybrid-proposals` (branch hybrid-proposals) Hybrid stage: Muse Spark Open on Baseten watches the blurred video and proposes candidate barriers with times; the agent verifies each against SAM tracks, cites as usual and gives every candidate a verdict (Report.proposals) (Pipeline, A) -- runs v3 and proposer-open-v1 frozen; not merged, owner decides
 - [ ] `d9-freeze` Feature freeze at noon (Demo)
 - [ ] `d9-script` Demo script (Demo, You)
 - [ ] `d9-video` Record 3-minute demo video (Demo, You)

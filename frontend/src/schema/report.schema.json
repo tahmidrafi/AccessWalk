@@ -227,6 +227,58 @@
       "title": "LocationTag",
       "type": "object"
     },
+    "ProposalReview": {
+      "description": "One candidate barrier from the video-level proposer and the agent's verdict on it.\nNever a finding by itself: only a cited finding (``finding_ids``) passed the validator.",
+      "properties": {
+        "n": {
+          "title": "N",
+          "type": "integer"
+        },
+        "check_id": {
+          "title": "Check Id",
+          "type": "string"
+        },
+        "frame_ms": {
+          "minimum": 0,
+          "title": "Frame Ms",
+          "type": "integer"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "cited",
+            "rejected",
+            "unreviewed"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "finding_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Finding Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "n",
+        "check_id",
+        "frame_ms",
+        "title",
+        "verdict"
+      ],
+      "title": "ProposalReview",
+      "type": "object"
+    },
     "RouteVerdict": {
       "properties": {
         "rating": {
@@ -290,6 +342,42 @@
           "default": false,
           "title": "Used Closed Fallback",
           "type": "boolean"
+        },
+        "proposer_provider": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proposer Provider"
+        },
+        "proposer_model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proposer Model"
+        },
+        "proposer_open_weight": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proposer Open Weight"
         }
       },
       "required": [
@@ -558,6 +646,13 @@
       "default": "Pre-trip screening from a phone video. Findings are likely barriers, not compliance determinations. Items marked 'verify manually' rest on depth, height or slope judged from video alone.",
       "title": "Disclaimer",
       "type": "string"
+    },
+    "proposals": {
+      "items": {
+        "$ref": "#/$defs/ProposalReview"
+      },
+      "title": "Proposals",
+      "type": "array"
     }
   },
   "required": [

@@ -148,6 +148,25 @@ class RunInfo(BaseModel):
     # Added Oct 29 (additive): true if any agent call fell back to the closed
     # Muse Spark 1.3. Off by default; eval and demo runs never enable it.
     used_closed_fallback: bool = False
+    # Added Nov 3 (additive, hybrid-proposals): the video-level model whose candidate
+    # barriers the agent verified. None = no proposer. A closed proposer (Muse Spark 1.3)
+    # means the run is not open-weight only, even when every agent call was.
+    proposer_provider: str | None = None
+    proposer_model: str | None = None
+    proposer_open_weight: bool | None = None
+
+
+class ProposalReview(BaseModel):
+    """One candidate barrier from the video-level proposer and the agent's verdict on it.
+    Never a finding by itself: only a cited finding (``finding_ids``) passed the validator."""
+
+    n: int
+    check_id: str
+    frame_ms: int = Field(ge=0)
+    title: str
+    verdict: Literal["cited", "rejected", "unreviewed"]
+    reason: str = ""
+    finding_ids: list[str] = Field(default_factory=list)
 
 
 class Report(BaseModel):
@@ -162,6 +181,7 @@ class Report(BaseModel):
     location_tags: list[LocationTag] = Field(default_factory=list)
     run: RunInfo
     disclaimer: str = DISCLAIMER
+    proposals: list[ProposalReview] = Field(default_factory=list)  # hybrid runs only (Nov 3)
 
     @model_validator(mode="after")
     def _findings_are_grounded(self) -> Report:
