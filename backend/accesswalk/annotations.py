@@ -6,7 +6,8 @@ use the report ``check_id`` names, severity uses the report bins.
 
 Scoring rules (eval, d7):
   * a finding matches a barrier when the check is the same and its frame time
-    is inside the barrier's time range, widened by ``MATCH_TOLERANCE_MS``;
+    is inside the barrier's time range, widened by ``MATCH_TOLERANCE_MS``; one
+    finding hits at most one barrier (scoring.py picks the assignment hitting the most);
   * a finding inside a ``clean`` range, or of a check listed in
     ``not_applicable``, is a false positive;
   * a finding elsewhere (not in any barrier or clean range) is not scored;

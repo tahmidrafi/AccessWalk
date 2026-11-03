@@ -78,7 +78,8 @@ flowchart LR
 Method (`eval/run_eval.py`, no network, no spend):
 - Ground truth per clip in `data/annotations/` (barrier check, time, severity; clean stretches;
   checks not applicable). Only clips marked `done` are scored.
-- A finding matches a barrier of the same check within ±1 s. Precision and recall per check.
+- A finding matches a barrier of the same check within ±1 s, and hits at most one barrier, so
+  overlapping barriers need a finding each. Precision and recall per check.
 - Baseline: Muse Spark 1.3 on the raw video with no tools and no tracking (`baseline-v1`), scored the
   same way, against the agent run frozen as `v1`.
 

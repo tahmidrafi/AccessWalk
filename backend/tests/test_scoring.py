@@ -68,10 +68,19 @@ def test_several_findings_on_one_barrier_are_one_hit():
     assert (c.hits, c.matched_findings, c.precision, c.recall) == (1, 2, 1.0, 1.0)
 
 
-def test_one_finding_can_hit_two_overlapping_barriers():
+def test_one_finding_hits_one_of_two_overlapping_barriers():
     ann = _ann(barriers=[_barrier("surface_damage", 10, 12), _barrier("surface_damage", 11, 14)])
     c = score_clip(ann, _report(("surface_damage", 11500)))["surface_damage"]
-    assert (c.hits, c.misses, c.matched_findings) == (2, 0, 1)
+    assert (c.hits, c.misses, c.matched_findings) == (1, 1, 1)
+    c = score_clip(ann, _report(("surface_damage", 11500), ("surface_damage", 11600)))["surface_damage"]
+    assert (c.hits, c.misses, c.matched_findings) == (2, 0, 2)
+
+
+def test_assignment_hits_as_many_barriers_as_possible():
+    # first finding fits both barriers, second only the first: first-come would hit one
+    ann = _ann(barriers=[_barrier("narrow_passage", 10, 20), _barrier("narrow_passage", 15, 30)])
+    c = score_clip(ann, _report(("narrow_passage", 16000), ("narrow_passage", 10000)))["narrow_passage"]
+    assert (c.hits, c.misses, c.matched_findings) == (2, 0, 2)
 
 
 def test_finding_of_another_check_on_a_barrier_is_unscored_not_a_hit():

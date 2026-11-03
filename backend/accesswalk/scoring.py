@@ -25,15 +25,37 @@ def _add(into: Counts, other: Counts) -> None:
         setattr(into, name, getattr(into, name) + getattr(other, name))
 
 
+def _assign(candidates: list[list[int]]) -> set[int]:
+    """Barriers hit when each finding may hit at most one barrier, chosen to hit as many
+    as possible (augmenting paths: overlapping barriers of one check would otherwise
+    let one finding count twice, and first-come assignment can strand a barrier)."""
+    owner: dict[int, int] = {}  # barrier -> finding
+
+    def augment(f: int, seen: set[int]) -> bool:
+        for b in candidates[f]:
+            if b not in seen:
+                seen.add(b)
+                if b not in owner or augment(owner[b], seen):
+                    owner[b] = f
+                    return True
+        return False
+
+    for f in range(len(candidates)):
+        augment(f, set())
+    return set(owner)
+
+
 def score_clip(ann: ClipAnnotation, report: Report | None) -> dict[str, Counts]:
-    """Counts per check for one clip. No report: every barrier is a miss."""
+    """Counts per check for one clip. No report: every barrier is a miss.
+    A finding inside a barrier's window is a matched finding (so a second finding on a
+    barrier already hit is not a false positive), but it hits one barrier at most."""
     out = {c: Counts() for c in ALL_CHECKS}
-    found: set[int] = set()
-    for f in report.findings if report else []:
-        matched = ann.matches(f.check_id, f.frame_ms)
+    findings = report.findings if report else []
+    candidates = [ann.matches(f.check_id, f.frame_ms) for f in findings]
+    found = _assign(candidates)
+    for f, matched in zip(findings, candidates, strict=True):
         if matched:
             out[f.check_id].matched_findings += 1
-            found.update(matched)
         elif ann.is_false_positive(f.check_id, f.frame_ms):
             out[f.check_id].false_positives += 1
         else:
