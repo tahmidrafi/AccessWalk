@@ -94,6 +94,41 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 - M8 Submitted, 5 PM CT (D10)
 
 ## Log
+
+### Night report, Nov 3 (Session A2; owner asleep, all runs pre-approved, $15 cap)
+Scored on the 11 Oct-29 clips marked done (15 barriers, ~95 s labelled clean); Oct-27 clips not touched.
+231420431 is read in memory with its typo fixed and its clean range cut to 0-4 s (see decisions).
+
+| Run | What | Recall | Precision | Cost, 11 clips |
+|---|---|---|---|---|
+| v1 | agent, old rules (frozen Oct 30) | 60% (9/15) | 90% (9/10) | $1.52 |
+| v2 | agent, rules v2 (main) | 60% (9/15) | 90% (9/10) | $1.96 |
+| v3 | hybrid: open proposer + agent (branch) | 47% (7/15) | 88% (7/8) | $2.16 |
+| v3b | v3 + recheck guidance (branch) | 47% (7/15) | 88% (7/8) | $1.97 |
+| proposer-open-v1 | Muse Spark Open on video alone | 67% (10/15) | 62% (10/16) | $0.17 |
+| baseline-v1 | Muse Spark 1.3 on video alone | 60% (9/15) | 100% (9/9) | $0.23 |
+
+If obstruction and narrow passage count as one check: v1 73%, v2 67%, v3 60%, v3b 53%, proposer 80% (precision 67%),
+baseline 67%. Gaps of 1-2 barriers are within run-to-run noise at n=15.
+- Changed: v2 rules (main, 54fc4eb); hybrid stage on branch `hybrid-proposals` (915f7f4, 50bd6a7), not merged.
+- Worked: fix 2 (the fallen branch is now an obstruction hit); in the hybrid, the agent rejected all 9 wrong
+  surface_damage proposals.
+- Broke or did not help: fix 1 cited no car in v2. The hybrid makes the agent cite the overhanging cars, but as
+  narrow_passage where two labels say obstruction. It also lost the parking stop (SAM found no track under the
+  phrase it tried, so the agent refused to cite). v2 dropped barrel 2 in 231529011 and added one vegetation FP in
+  a clean clip (noise).
+- Recommendation: ship main (v2 rules, classic agent, hybrid off). Keep the branch as an option: it is open-weight
+  end to end (Baseten takes video), but it scores lower here.
+- Demo route at $0: verified on main and on the branch (hybrid off) through the API pipeline with every host
+  blocked, on the raw clip and the GPS-stripped twin. The live Modal app still runs the pre-v2 code with its own
+  caches, so it is unchanged. If you redeploy main: `deploy_bundle.py ... --twin ... --upload`, then
+  `modal run deploy/modal_app.py --video ...` must report not_cached 0, then `modal deploy`.
+- Decisions for the owner: (1) 231420431: `"sidewalk_obstructed"` -> `"sidewalk_obstruction"`, and the barrel row
+  (4-44 s) overlaps clean 0-17 s; until fixed, test_committed_annotations_are_valid fails and run_eval.py refuses
+  the file. (2) Car overhang convention: 225010831/230032026 label it obstruction, 231822465/231904710 narrow
+  passage, and the rules now say narrow passage. (3) Merge hybrid-proposals or not. (4) Sample report pin is
+  still the v1-era report; refreshing it needs a rebuild + redeploy.
+- Spend tonight: $6.10 (Baseten $5.75 for agent, proposer and probe; SAM rechecks $0.35). Nothing pushed, no deploy.
 - 2026-10-28: plan set up; 11 clips filmed (silent, no narration); CLAUDE.md v2; Fireworks model ID set in .env.
 - 2026-10-28 (Session A): M2 reached. git init + public repo pushed (owner, SSH alias); ingest.py (local YuNet face blur, GPS/metadata strip, sam.mp4/proxy.mp4/audio.wav/meta.json) verified on PXL_20261027_211833467 (1080x1920->720x1280, 111 frames, GPS stripped; 0 faces in this clip, so blur geometry covered by a unit test, not a real face); SAM client + grammar parser + cache (by video hash, keyed on full request metadata) + usage.jsonl logging, 18 tests passing, ruff clean; first SAM run (tree root=19 recs/2 tracks, trash bin=8/1, handrail=0, $0.0666, frame-alignment confirmed vfp==111, box dims==720x1280, re-run free via cache). SAM confidence (metadata.include_confidence) now enabled for d4; the one run clip predates it and will be re-segmented as part of d4-samall. Blocked: none. Note: local main ahead of origin (owner pushes). Next: d4 (SAM all phrases x 11 clips, inventory, freeze schemas.py + meta: populate proxy.n_frames; confirm face blur on a clip with people).
 - 2026-10-28 evening (Session A): d3 review: ingest now fails on decode errors and records proxy.n_frames. d4-samall phrase test (2 clips: 211833467 heaved slab, 220842365 vegetation narrowing; 7 phrases, $0.3654 = estimate): keep `raised sidewalk slab` (localizes heaved/tilted slabs, 8 tracks, 0 on the clean clip; also fires on some ordinary slabs, so the agent must verify), `overgrown vegetation` (edge encroachment); `sidewalk` only as context; drop `uneven sidewalk` and `cracked pavement` (one whole-frame box per frame, inventory flags them as duplicates of `sidewalk`), `grass` (noisy duplicate of vegetation), `tree root` optional (beside the slab, not on it). Not yet run on all 11 clips: phrase list needs owner OK. Face blur: campus clip 225049085 has a real passer-by; YuNet at 0.6 caught them on 47/140 frames, leaving gaps of up to 19 unblurred frames (never sent to any model). Fix: detect pass, then plan (hold +-4 frames, bridge gaps <= 1 s with the hull of matched boxes), then blur pass; threshold 0.5; drop face boxes wider than half the frame (0.5 produced frame-sized false positives on clip 1). Blur-only change, so INGEST_VERSION unchanged and SAM cache valid; all clips with detections re-ingested; campus frames verified blurred incl. the old gap. d4-schema frozen (M3): schemas.py with grounding validator, JSON Schema + mock from clip 1 real tracks (18 tracks, 3 hand-written findings, agent_provider=mock). d4-inventory: build_tracks, id stitching, cross-phrase dedupe, plate-blurred keyframe JPEGs, inventory.json; 34 tests, ruff clean. Blocked: none. Next: OK phrase list -> d4-samall on 11 clips (~$0.33/phrase), then inventory on all.
