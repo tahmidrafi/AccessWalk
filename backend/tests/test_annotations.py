@@ -40,3 +40,14 @@ def test_bad_annotations_rejected(kw, msg):
 def test_committed_annotations_are_valid():
     all_files = load_all(ANNOTATIONS_DIR, done_only=False)
     assert "PXL_20261027_211833467" in all_files
+
+
+def test_labelled_seconds_count_overlaps_once():
+    a = ClipAnnotation.model_validate({
+        "clip": "x", "annotator": "t", "status": "draft", "duration_s": 20.0,
+        "barriers": [{"check": "steps_without_ramp", "t": [5.0, 12.0], "sev": "high", "note": "n"},
+                     {"check": "missing_handrail", "t": [6.0, 14.0], "sev": "medium", "note": "n"},
+                     {"check": "surface_damage", "t": [7.0, 8.0], "sev": "low", "note": "n"}],
+        "clean": [[0.0, 4.0], [16.0, 20.4]],
+    })
+    assert a.labelled_s() == pytest.approx(4 + 9 + 4)  # 0-4, 5-14, 16-20 (clipped at 20 s)

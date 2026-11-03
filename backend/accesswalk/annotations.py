@@ -77,6 +77,17 @@ class ClipAnnotation(BaseModel):
                 raise ValueError(f"{b.check} is listed as not_applicable but has a barrier")
         return self
 
+    def labelled_s(self) -> float:
+        """Seconds covered by any barrier or clean range, overlaps counted once
+        (barriers of different checks often overlap) and clipped to the clip."""
+        spans = sorted([tuple(b.t) for b in self.barriers] + [tuple(c) for c in self.clean])
+        total, end = 0.0, 0.0
+        for a, b in spans:
+            a, b = max(a, end), min(b, self.duration_s)
+            if b > a:
+                total, end = total + b - a, b
+        return total
+
     def matches(self, check_id: str, frame_ms: int) -> list[int]:
         """Indices of barriers a finding (check, time) would match."""
         return [

@@ -56,7 +56,7 @@ def check() -> int:
             print(f"FAIL {p.name}: {e}")
             continue
         done += a.status == "done"
-        covered = sum(b.t[1] - b.t[0] for b in a.barriers) + sum(c[1] - c[0] for c in a.clean)
+        covered = a.labelled_s()
         checks = ", ".join(f"{b.check}({b.sev})" for b in a.barriers) or "none"
         print(f"ok   {p.stem} [{a.status}] {len(a.barriers)} barriers: {checks} | "
               f"labelled {covered / a.duration_s:.0%} of {a.duration_s:.0f} s")
