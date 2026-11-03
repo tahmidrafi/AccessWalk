@@ -153,8 +153,11 @@ def proposals_prompt(proposals: list[Proposal]) -> str:
         "its times can be off by a few seconds and its check can be wrong. For each candidate, look at "
         "the tracks and frames around its time. Cite a finding (under whichever check fits) only if "
         "the tracks and frames support it; otherwise reject it. A candidate is not evidence: never cite "
-        "one without a track that has a box on the cited frame. The candidates do not replace your own "
-        "review: still check the whole clip. In finish, give a verdict for every candidate.",
+        "one without a track that has a box on the cited frame. If a candidate looks real in the frames "
+        "but no track covers it, spend recheck_with_sam on it (if the first short phrase finds nothing, "
+        "try another one for the same object); do not spend rechecks on candidates the frames already "
+        "rule out. The candidates do not replace your own review: still check the whole clip. In "
+        "finish, give a verdict for every candidate.",
         "Candidates (n | check | time | nearest frame | what it said):",
     ]
     for p in proposals:
