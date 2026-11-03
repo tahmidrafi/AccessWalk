@@ -122,6 +122,8 @@ seconds with no paid call. This was checked with every model host unreachable. "
 on the upload page opens its finished report with no upload at all (`VITE_SAMPLE_REPORT_ID`).
 
 ## Deploy (Modal)
+Live: https://rafi-tahmid--accesswalk-web.us-east.modal.run (sample route and reports; uploads need the passcode).
+
 One Modal app serves the API and the built UI on one URL, on CPU only, scaling to zero. It is public
 and read-only: sample route, reports, blurred media. Uploads need a passcode, and they stop once the
 spend caps are used ($1 per job, $5 a day, $10 in total). The data volume holds blurred media and
