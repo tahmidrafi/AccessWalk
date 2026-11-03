@@ -170,6 +170,8 @@ def test_frontend_is_served_with_spa_fallback(tmp_path, monkeypatch):
     monkeypatch.setenv("ACCESSWALK_FRONTEND_DIR", str(dist))
     c = _client(tmp_path)
     assert c.get("/assets/app.js").text == "js"
+    assert "immutable" in c.get("/assets/app.js").headers["cache-control"]
+    assert c.get("/reports/abc-123").headers["cache-control"] == "no-cache"  # a redeploy is seen at once
     for route in ["/", "/reports/abc-123", "/jobs/job-1"]:
         assert c.get(route).text == "<!doctype html>app", route
     assert c.get("/..%2Fsecret.txt").text == "<!doctype html>app"

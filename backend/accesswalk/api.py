@@ -179,9 +179,13 @@ def create_app(
             if path.startswith(("api/", "media/")):
                 raise ApiError(404, "not_found", f"no route /{path}")
             file = (dist / path).resolve()
+            if path.startswith("assets/") and file.is_file() and file.is_relative_to(dist):
+                # content-hashed names: a new build gets new names
+                return FileResponse(file, headers={"Cache-Control": "public, max-age=31536000, immutable"})
             if path and file.is_file() and file.is_relative_to(dist):
-                return FileResponse(file)
-            return FileResponse(dist / "index.html")
+                return FileResponse(file, headers={"Cache-Control": "no-cache"})
+            # index.html names the current assets: revalidate it, or a redeploy goes unseen
+            return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})
 
     return app
 
