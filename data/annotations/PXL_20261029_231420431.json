@@ -16,6 +16,17 @@
       "temporary": false
     },
     {
+      "check": "sidewalk_obstructed",
+      "t": [
+        4.0,
+        44.0
+      ],
+      "sev": "low",
+      "note": "Orange traffic barrel placed on the sidewalk, too far from the camera, not distinguishable how much space it blocks.",
+      "verify": true,
+      "temporary": false
+    },
+    {
       "check": "narrow_passage",
       "t": [
         40.0,
