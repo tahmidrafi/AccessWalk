@@ -1,20 +1,35 @@
 {
   "clip": "PXL_20261029_231822465",
   "annotator": "tahmid",
-  "status": "draft",
+  "status": "done",
   "duration_s": 39.204,
-  "barriers": [],
-  "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
+  "barriers": [
+    {
+      "check": "narrow_passage",
+      "t": [
+        3.0,
+        28.0
+      ],
+      "sev": "low",
+      "note": "Several cars/vans/trucks in the parking lot on the left overhangs into the sidewalk making it narrow.",
+      "verify": false,
+      "temporary": true
+    }
+  ],
+  "clean": [
+    [
+      0.0,
+      3.0
     ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+    [
+      28.0,
+      39.204
+    ]
+  ],
+  "not_applicable": [
+    "steps_without_ramp",
+    "missing_handrail",
+    "round_doorknob"
+  ],
+  "notes": "Narrow walk between parking lot and street; vehicle bumpers overhang left edge"
 }

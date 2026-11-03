@@ -1,20 +1,37 @@
 {
   "clip": "PXL_20261029_231529011",
   "annotator": "tahmid",
-  "status": "draft",
+  "status": "done",
   "duration_s": 36.803,
-  "barriers": [],
+  "barriers": [
+    {
+      "check": "sidewalk_obstruction",
+      "t": [
+        3.0,
+        21.5
+      ],
+      "sev": "low",
+      "note": "Traffic barrel 1 on the sidewalk marks construction ahead and partially blocks the sidewalk",
+      "verify": true,
+      "temporary": true
+    },
+    {
+      "check": "sidewalk_obstruction",
+      "t": [
+        6.0,
+        36.803
+      ],
+      "sev": "high",
+      "note": "Traffic barrel 2 on the sidewalk marks construction ahead and completely blocks the sidewalk",
+      "verify": false,
+      "temporary": true
+    }
+  ],
   "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "not_applicable": [
+    "steps_without_ramp",
+    "missing_handrail",
+    "round_doorknob"
+  ],
+  "notes": "Construction crew working on the road placed these on the sidewalk"
 }

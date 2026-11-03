@@ -1,20 +1,42 @@
 {
   "clip": "PXL_20261029_231904710",
   "annotator": "tahmid",
-  "status": "draft",
+  "status": "done",
   "duration_s": 36.737,
-  "barriers": [],
-  "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "barriers": [
+    {
+      "check": "narrow_passage",
+      "t": [
+        4.0,
+        36.737
+      ],
+      "sev": "medium",
+      "note": "sedan parked in the adjacent parking lot on the left overhangs into the sidewalk, making it narrow",
+      "verify": true,
+      "temporary": true
+    },
+    {
+      "check": "sidewalk_obstruction",
+      "t": [
+        8.0,
+        36.737
+      ],
+      "sev": "high",
+      "note": "A parking stop slide from the parking lot on the left onto the sidewalk blocking it",
+      "verify": true,
+      "temporary": true
+    }
+  ],
+  "clean": [
+    [
+      0.0,
+      4.0
+    ]
+  ],
+  "not_applicable": [
+    "steps_without_ramp",
+    "missing_handrail",
+    "round_doorknob"
+  ],
+  "notes": "A already narrow sidewalk got worse with parking block sliding on the sidewalk and the parked vehicles looming over"
 }
