@@ -3,18 +3,24 @@
   "annotator": "tahmid",
   "status": "draft",
   "duration_s": 29.036,
-  "barriers": [],
+  "barriers": [
+    {
+      "check": "sidewalk_obstruction",
+      "t": [
+        0.5,
+        29.036
+      ],
+      "sev": "medium",
+      "note": "fallen branch on the sidewalk",
+      "verify": false,
+      "temporary": true
+    }
+  ],
   "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "not_applicable": [
+    "steps_without_ramp",
+    "missing_handrail",
+    "round_doorknob"
+  ],
+  "notes": "Fallen tree branch after a stormy night blocks the sidewalk leaving no space for wheelchairs to move without going into the uneven grass."
 }

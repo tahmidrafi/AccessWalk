@@ -3,18 +3,44 @@
   "annotator": "tahmid",
   "status": "draft",
   "duration_s": 24.002,
-  "barriers": [],
+  "barriers": [
+    {
+      "check": "sidewalk_ends",
+      "t": [
+        4.0,
+        24.002
+      ],
+      "sev": "high",
+      "note": "paved walk stops at grass/dirt; may be buried slab",
+      "verify": true,
+      "temporary": false
+    },
+    {
+      "check": "steps_without_ramp",
+      "t": [
+        9.0,
+        19.0
+      ],
+      "sev": "high",
+      "note": "7 steps up to house door, no ramp",
+      "verify": false,
+      "temporary": false
+    },
+    {
+      "check": "missing_handrail",
+      "t": [
+        9.0,
+        19.0
+      ],
+      "sev": "medium",
+      "note": "same steps, no rail either side",
+      "verify": false,
+      "temporary": false
+    }
+  ],
   "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "not_applicable": [
+    "round_doorknob"
+  ],
+  "notes": "Curb between street and sidewalk has no curb cut (not a crossing, so not labelled). Sidewalk end at ~0:05 and ~0:21 is the same spot."
 }

@@ -3,18 +3,40 @@
   "annotator": "tahmid",
   "status": "draft",
   "duration_s": 57.838,
-  "barriers": [],
-  "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "barriers": [
+    {
+      "check": "narrow_passage",
+      "t": [
+        17.0,
+        57.838
+      ],
+      "sev": "low",
+      "note": "sidewalk jogges around a utility box and electric poles, pole 2 takes up 1/3 space in the sidewalk",
+      "verify": true,
+      "temporary": false
+    },
+    {
+      "check": "narrow_passage",
+      "t": [
+        40.0,
+        57.838
+      ],
+      "sev": "medium",
+      "note": "sidewalk jogges around a utility box and electic poles, pole 3 at the pinch point takes up about 1/2 space in the sidewalk",
+      "verify": true,
+      "temporary": false
+    }
+  ],
+  "clean": [
+    [
+      0.0,
+      17.0
+    ]
+  ],
+  "not_applicable": [
+    "steps_without_ramp",
+    "missing_handrail",
+    "round_doorknob"
+  ],
+  "notes": "Three consecutive Poles, first one is neglibile, the other two make the passage narrow, while the sidewalk makes a short turn around some ground disturbance, "
 }

@@ -1,20 +1,26 @@
 {
   "clip": "PXL_20261029_225010831",
   "annotator": "tahmid",
-  "status": "draft",
+  "status": "done",
   "duration_s": 29.64,
-  "barriers": [],
+  "barriers": [
+    {
+      "check": "sidewalk_obstruction",
+      "t": [
+        0.0,
+        29.64
+      ],
+      "sev": "high",
+      "note": "parked car on the driveway overhanging the sidewalk",
+      "verify": false,
+      "temporary": true
+    }
+  ],
   "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "not_applicable": [
+    "steps_without_ramp",
+    "missing_handrail",
+    "round_doorknob"
+  ],
+  "notes": "Same car throughout. 15.5-23.0 s: camera turned away while detouring around the car via the ramp into the road, then back toward the car."
 }
