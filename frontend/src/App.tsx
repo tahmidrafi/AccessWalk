@@ -6,6 +6,17 @@ import { ReportRoute } from './components/ReportRoute'
 import { UploadPage } from './components/UploadPage'
 import { matchRoute, usePageEntry, usePathname } from './lib/router'
 
+/** Brand mark: a route with a tracked box on it (decorative; the wordmark names the link). */
+function Logo() {
+  return (
+    <svg className="logo" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <rect width="32" height="32" rx="9" className="logo-bg" />
+      <path d="M9 25 C 12 18, 20 18, 17 7" className="logo-route" />
+      <rect x="13" y="4" width="9" height="8" rx="1.5" className="logo-box" />
+    </svg>
+  )
+}
+
 function NotFoundPage() {
   const headingRef = useRef<HTMLHeadingElement>(null)
   usePageEntry('Page not found - AccessWalk', headingRef)
@@ -29,10 +40,25 @@ export default function App() {
         Skip to main content
       </a>
       <header className="site-header">
-        <p className="brand">
-          <Link to="/">AccessWalk</Link>
-        </p>
-        <p className="tagline">Know before you go: accessibility report from a phone walkthrough</p>
+        <div className="site-header-inner">
+          <p className="brand">
+            <Link to="/">
+              <Logo />
+              AccessWalk
+            </Link>
+          </p>
+          <nav aria-label="Main" className="site-nav no-print">
+            <ul>
+              <li>
+                <a href="/#how">How it works</a>
+              </li>
+              <li>
+                <a href="/#upload">Check a route</a>
+              </li>
+            </ul>
+          </nav>
+          <p className="tagline print-only">Know before you go: accessibility report from a phone walkthrough</p>
+        </div>
       </header>
       <main id="main" tabIndex={-1}>
         {route.name === 'upload' && <UploadPage api={api} />}

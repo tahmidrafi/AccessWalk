@@ -17,6 +17,7 @@ import { navigate, usePageEntry } from '../lib/router'
 import type { Health, JobError, ReportSummary } from '../types/api'
 import { HeroMedia } from './HeroMedia'
 import { HowItWorks } from './HowItWorks'
+import { ReportPreview, StatTiles } from './LandingSections'
 import { Link } from './Link'
 
 interface Props {
@@ -139,9 +140,9 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
     <>
       <section className="hero" aria-labelledby="page-title">
         <div className="hero-copy">
-          <p className="hero-eyebrow">For wheelchair users, before the trip</p>
+          <p className="hero-eyebrow">Accessibility, before you arrive</p>
           <h1 id="page-title" ref={headingRef} tabIndex={-1}>
-            Check a route <span className="hero-mark">before you go</span>
+            Know the route <span className="hero-mark">before</span> you go.
           </h1>
           <p className="lede">
             Film the walk from the bus stop or parking to the entrance. AccessWalk tracks every object along the route
@@ -184,7 +185,11 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
         <HeroMedia />
       </section>
 
+      <StatTiles />
+
       <HowItWorks />
+
+      <ReportPreview sampleHref={sample ? reportPagePath(sample.report_url) : undefined} />
 
       {uploadError && (
         <div className="alert" role="alert" tabIndex={-1} ref={alertRef} aria-labelledby="upload-error-title">
