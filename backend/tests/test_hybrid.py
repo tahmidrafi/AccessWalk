@@ -44,7 +44,7 @@ def test_classic_run_is_unchanged_without_a_proposer(tmp_path):
     chat = FakeChat([_finish(1)])
     res = agent.run_agent(_ctx(), chat_fn=chat, run_log=tmp_path / "r.jsonl", render=False)
     messages, kw = chat.sent[0]
-    assert len(messages) == 2 and kw["tools"] is agent.TOOLS  # same cache key as before
+    assert len(messages) == 2 and kw["tools"] == agent.TOOLS  # same cache key as before
     assert res.report.proposals == [] and res.report.run.proposer_model is None
 
 
@@ -66,7 +66,7 @@ def test_agent_verifies_each_proposal_and_report_keeps_verdicts(tmp_path):
     )
     res = agent.run_agent(ctx, chat_fn=chat, run_log=tmp_path / "r.jsonl", render=False)
     first, kw = chat.sent[0]
-    assert kw["tools"] is agent.HYBRID_TOOLS and "Candidates" in first[2]["content"]
+    assert kw["tools"] == agent.HYBRID_TOOLS and "Candidates" in first[2]["content"]
     refused = [json.loads(m["content"]) for m in chat.sent[2][0] if m["role"] == "tool"][-1]
     assert refused["ok"] is False and "[1, 2]" in refused["reason"]
     r = res.report

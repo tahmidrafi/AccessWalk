@@ -96,6 +96,13 @@ class ChatResult:
     cache_hit: bool
     cost_usd: float
     errors: list[str] = field(default_factory=list)  # failed providers before this one
+    # what the call cost when it was made, also on a cache hit (reports show this; cost_usd
+    # is new spend). None = same as cost_usd.
+    usage_cost_usd: float | None = None
+
+    @property
+    def call_cost_usd(self) -> float:
+        return self.cost_usd if self.usage_cost_usd is None else self.usage_cost_usd
 
     @property
     def used_closed_model(self) -> bool:
@@ -195,6 +202,6 @@ def chat(
         return ChatResult(
             message=data["message"], finish_reason=data.get("finish_reason"), usage=data["usage"],
             provider=name, model_served=data.get("model_served"), cache_hit=hit, cost_usd=cost,
-            errors=errors,
+            errors=errors, usage_cost_usd=cost_usd(name, data["usage"]),
         )
     raise ProviderError("all providers failed: " + " | ".join(errors))

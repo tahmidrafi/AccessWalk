@@ -220,6 +220,15 @@ def build_report(
     return report, len(output.findings) - len(kept)
 
 
+def cache_path(meta: IngestMeta, rules: Rules, out_root: Path = DEFAULT_OUT_ROOT) -> Path:
+    """Where this clip's answer is cached, keyed by (model, output limit, prompt)."""
+    import hashlib
+
+    prompt = build_prompt(rules, meta.sam.width, meta.sam.height, round(meta.source.duration_s * 1000))
+    key = hashlib.sha256(f"{MODEL}|{MAX_OUTPUT_TOKENS}|{prompt}".encode()).hexdigest()[:20]
+    return Path(out_root) / meta.video_sha256 / "baseline" / f"{key}.json"
+
+
 def run_clip(
     meta: IngestMeta,
     rules: Rules,
@@ -230,12 +239,10 @@ def run_clip(
     call_fn=call_model,
 ) -> tuple[Report, int, dict]:
     """One clip, cached by (clip, model, prompt). Returns (report, findings dropped, usage)."""
-    import hashlib
-
     clip_dir = Path(out_root) / meta.video_sha256
     prompt = build_prompt(rules, meta.sam.width, meta.sam.height, round(meta.source.duration_s * 1000))
-    key = hashlib.sha256(f"{MODEL}|{MAX_OUTPUT_TOKENS}|{prompt}".encode()).hexdigest()[:20]
-    cpath = clip_dir / "baseline" / f"{key}.json"
+    cpath = cache_path(meta, rules, out_root)
+    key = cpath.stem
     hit = cpath.exists()
     if hit:
         raw = RawResponse(**json.loads(cpath.read_text(encoding="utf-8")))

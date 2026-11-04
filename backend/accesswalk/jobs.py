@@ -6,10 +6,10 @@ kept in memory and written to ``data/out/jobs/<job_id>.json``; a job that was
 queued or running when the server stopped is marked failed on the next start.
 
 Spend guard: before any paid call the pipeline estimates SAM cost for the clip
-(frames x phrases, ignoring cache hits) plus the agent budget, and fails with
-``over_budget`` if that exceeds ``ACCESSWALK_MAX_JOB_USD`` (default $1). The agent
-runs open-weight only (Baseten, then Fireworks); the closed fallback is never
-enabled from the API.
+(frames x phrases, ignoring cache hits) plus the review budget, and fails with
+``over_budget`` if that exceeds ``ACCESSWALK_MAX_JOB_USD`` (default $1). The review
+stage is ``review.DEFAULT_REVIEW`` unless ``ACCESSWALK_REVIEW`` names another (see
+review.py for the systems and which models they call).
 
 Deploy-wide caps (d7-deploy): ``ACCESSWALK_MAX_TOTAL_USD`` over all jobs and
 ``ACCESSWALK_MAX_DAILY_USD`` over jobs created that UTC day, counted from the job
@@ -122,7 +122,7 @@ Pipeline = Callable[[Path, Callable[..., None]], Report]
 
 
 def real_pipeline(raw: Path, update: Callable[..., None], out_root: Path = DEFAULT_OUT_ROOT) -> Report:
-    from .agent import load_context, run_agent  # heavy imports only when a job runs
+    from .agent import load_context  # heavy imports only when a job runs
 
     update(stage="ingest", progress=0.02, message="Blurring faces and preparing the video")
     meta = ingest(raw)
@@ -146,21 +146,14 @@ def real_pipeline(raw: Path, update: Callable[..., None], out_root: Path = DEFAU
            cost_usd=round(spent, 4))
     build_inventory(meta, records, out_root)
 
+    from .review import run_review, selected
+
     update(stage="review", progress=0.7, message="Agent reviewing tracked objects")
     ctx = load_context(raw.stem, out_root, raw_path=raw)
-    budget = AGENT_BUDGET_USD
-    if os.getenv("ACCESSWALK_HYBRID") == "open":  # hybrid-proposals; off by default (demo cache)
-        from .hybrid import propose_open
-
-        try:
-            ctx.proposals, ctx.proposer, _, cost = propose_open(ctx.meta, ctx.rules, out_root)
-            budget = max(0.0, budget - cost)
-        except Exception:  # no proposals is the classic run, not a failed job
-            ctx.proposals, ctx.proposer = [], None
-    result = run_agent(ctx, allow_closed=False, max_cost_usd=budget)
+    report, review_spent = run_review(ctx, out_root, AGENT_BUDGET_USD, selected())
     update(stage="report", progress=0.98, message="Writing the report",
-           cost_usd=round(spent + result.cost_usd, 4))
-    return result.report
+           cost_usd=round(spent + review_spent, 4))
+    return report
 
 
 def run_job(store: JobStore, job_id: str, raw: Path, pipeline: Pipeline,

@@ -62,6 +62,41 @@ VIEW_WIDTH = 512  # ~1.1k input tokens per image (smoke test, Oct 29)
 PARAMS = {"temperature": 0, "max_tokens": 8000, "parallel_tool_calls": True}
 
 
+@dataclass(frozen=True)
+class AgentConfig:
+    """Which model reviews a clip and how much it may look. ``order`` are the open-weight
+    hosts tried first; ``allow_closed`` adds Muse Spark 1.3 after them (with no open hosts it
+    is the only model). The defaults are the v2 run: same tools, same prompt, so cached v2
+    turns replay."""
+
+    name: str = "open"
+    order: tuple[str, ...] = ("baseten", "fireworks")
+    allow_closed: bool = False
+    max_views: int = MAX_VIEWS
+    max_rechecks: int = MAX_RECHECKS
+    max_turns: int = MAX_TURNS
+    extra_instructions: str = ""  # appended to the system prompt
+
+
+RECHECK_FIRST = (
+    "Rechecks: SAM tracks only the phrases it was given, so a real barrier can have no track or "
+    "only a track of the wrong phrase. Before you decide that something you suspect (from the "
+    "inventory, a frame you viewed, or a candidate you were given) cannot be cited, call "
+    "recheck_with_sam on a window of about 10 s around it, and if that finds nothing, try one or two "
+    "other short phrases for the same object (e.g. 'cracked slab', 'uneven pavement', 'raised "
+    "concrete'). Reject it only after the rechecks and the frames rule it out."
+)
+
+# The configs the eval compares (see eval/runs/*.json). "open" is v2; "spark13" is the same
+# agent on Muse Spark 1.3; "spark13-deep" also looks more and rechecks before rejecting.
+CONFIGS = {
+    "open": AgentConfig(),
+    "spark13": AgentConfig(name="spark13", order=(), allow_closed=True),
+    "spark13-deep": AgentConfig(name="spark13-deep", order=(), allow_closed=True, max_views=24,
+                                max_rechecks=6, max_turns=30, extra_instructions=RECHECK_FIRST),
+}
+
+
 # --------------------------------------------------------------------------- #
 # tool schemas (part of the cache key: changing them invalidates cached turns)
 # --------------------------------------------------------------------------- #
@@ -73,20 +108,23 @@ def _fn(name: str, desc: str, props: dict, required: list[str]) -> dict:
 
 
 CHECK_ENUM = sorted(load_rules().checks)
-TOOLS = [
+
+
+def make_tools(max_views: int = MAX_VIEWS, max_rechecks: int = MAX_RECHECKS) -> list[dict]:
+    return [
     _fn("get_track", "Boxes of one tracked object over time, sampled. For sidewalk_obstruction objects a "
         "few frames also have on_sidewalk: the share of the object's ground-contact points (bottom of "
         "its mask) inside the sidewalk mask on that frame (null = no sidewalk mask there).",
         {"track_id": {"type": "string"}}, ["track_id"]),
     _fn("view_frame", "See one frame of the face- and plate-blurred video, with the boxes of up to 4 "
         f"tracks drawn and labelled. Use it to judge ramps, curb ramps, knob shapes and heights. At most "
-        f"{MAX_VIEWS} per clip and {MAX_IMAGES} per turn; only your latest {MAX_IMAGES} frames stay "
+        f"{max_views} per clip and {MAX_IMAGES} per turn; only your latest {MAX_IMAGES} frames stay "
         "visible, older ones are replaced by their captions, so note what you saw before moving on.",
         {"frame_index": {"type": "integer"},
          "track_ids": {"type": "array", "items": {"type": "string"}, "maxItems": 4}},
         ["frame_index"]),
     _fn("recheck_with_sam", "Run SAM 3.1 with a new short noun phrase on a time window (>= 10 s is "
-        f"billed anyway). New tracks can be cited for for_check. At most {MAX_RECHECKS} per clip.",
+        f"billed anyway). New tracks can be cited for for_check. At most {max_rechecks} per clip.",
         {"phrase": {"type": "string"}, "start_ms": {"type": "integer"}, "end_ms": {"type": "integer"},
          "for_check": {"type": "string", "enum": CHECK_ENUM}},
         ["phrase", "start_ms", "end_ms", "for_check"]),
@@ -105,10 +143,15 @@ TOOLS = [
         {"not_applicable": {"type": "array", "items": {"type": "string", "enum": CHECK_ENUM}},
          "summary": {"type": "string"}},
         ["not_applicable", "summary"]),
-]
+    ]
 
-# finish with a verdict per proposal: only sent on hybrid runs
-HYBRID_TOOLS = TOOLS[:-1] + [
+
+TOOLS = make_tools()
+
+
+def hybrid_tools(tools: list[dict]) -> list[dict]:
+    """``tools`` with a finish that takes a verdict per proposal: only sent on hybrid runs."""
+    return tools[:-1] + [
     _fn("finish", "End the review. List checks that cannot occur on this clip, summarize the route, and "
         "give a verdict for every candidate barrier you were given.",
         {"not_applicable": {"type": "array", "items": {"type": "string", "enum": CHECK_ENUM}},
@@ -119,7 +162,10 @@ HYBRID_TOOLS = TOOLS[:-1] + [
              "reason": {"type": "string", "description": "what the tracks and frames showed"}},
              "required": ["n", "verdict", "reason"]}}},
         ["not_applicable", "summary", "proposals"]),
-]
+    ]
+
+
+HYBRID_TOOLS = hybrid_tools(TOOLS)
 
 
 # --------------------------------------------------------------------------- #
@@ -147,6 +193,9 @@ class AgentContext:
     proposer: object = None  # hybrid.Proposer
     proposal_verdicts: dict[int, dict] = field(default_factory=dict)  # n -> {verdict, reason}
     finish_retried: bool = False
+    config: AgentConfig = field(default_factory=AgentConfig)
+    recheck_usd: float = 0.0  # what this run's SAM rechecks cost (cache hits included)
+    recheck_spend_usd: float = 0.0  # new SAM spend (cache hits are free)
 
 
 def load_context(clip_stem: str, out_root: Path = DEFAULT_OUT_ROOT,
@@ -178,7 +227,20 @@ def _where(b, w: int, h: int) -> str:
     return f"{row}-{col}, {100 * (b.x2 - b.x1) / w:.0f}% wide"
 
 
-def system_prompt(rules: Rules) -> str:
+def rule_lines(rules: Rules) -> list[str]:
+    """One line per check: question, citable phrases, severity bins, pitfalls."""
+    lines = []
+    for cid, r in rules.checks.items():
+        sev = "; ".join(f"{k}: {v}" for k, v in r.severity.items())
+        pit = "; ".join(r.pitfalls) or "none"
+        lines.append(
+            f"- {cid}: {r.question} Cite tracks of: {', '.join(r.evidence_phrases)}. "
+            f"Judged from: {r.judged_from}. Severity: {sev}. Pitfalls: {pit}."
+        )
+    return lines
+
+
+def system_prompt(rules: Rules, extra: str = "") -> str:
     parts = [
         "You review a first-person walking video of a route for wheelchair users. SAM 3.1 has already "
         "tracked objects in it; you decide which ones are likely barriers and cite each with a tool call.",
@@ -191,14 +253,10 @@ def system_prompt(rules: Rules) -> str:
         "its own overlay, so the colours you see in view_frame mean nothing to the reader. "
         "When done, call finish.",
         "Checks:",
+        *rule_lines(rules),
     ]
-    for cid, r in rules.checks.items():
-        sev = "; ".join(f"{k}: {v}" for k, v in r.severity.items())
-        pit = "; ".join(r.pitfalls) or "none"
-        parts.append(
-            f"- {cid}: {r.question} Cite tracks of: {', '.join(r.evidence_phrases)}. "
-            f"Judged from: {r.judged_from}. Severity: {sev}. Pitfalls: {pit}."
-        )
+    if extra:
+        parts.append(extra)
     return "\n".join(parts)
 
 
@@ -270,8 +328,8 @@ def tool_get_track(ctx: AgentContext, track_id: str) -> dict:
 
 
 def tool_recheck(ctx: AgentContext, phrase: str, start_ms: int, end_ms: int, for_check: str) -> dict:
-    if ctx.rechecks >= MAX_RECHECKS:
-        return {"error": f"recheck limit ({MAX_RECHECKS}) reached"}
+    if ctx.rechecks >= ctx.config.max_rechecks:
+        return {"error": f"recheck limit ({ctx.config.max_rechecks}) reached"}
     if for_check not in ctx.rules.checks:
         return {"error": f"unknown check {for_check!r}"}
     phrase = phrase.strip().lower()
@@ -331,8 +389,8 @@ def _frame_image(ctx: AgentContext, frame_index: int):
 
 
 def tool_view_frame(ctx: AgentContext, frame_index: int, track_ids: list | None = None) -> dict:
-    if ctx.views >= MAX_VIEWS:
-        return {"error": f"view limit ({MAX_VIEWS}) reached; cite from what you have"}
+    if ctx.views >= ctx.config.max_views:
+        return {"error": f"view limit ({ctx.config.max_views}) reached; cite from what you have"}
     if len(ctx.pending_images) >= MAX_IMAGES:
         return {"error": f"at most {MAX_IMAGES} frames per turn"}
     if not 0 <= frame_index < ctx.meta.sam.n_frames:
@@ -427,6 +485,9 @@ def sam_recheck(ctx: AgentContext, phrase: str, start_ms: int, end_ms: int,
         usage=data["usage"], cache_hit=hit, cost_usd=cost, video_sha256=m.video_sha256, phrase=phrase,
         extra={"tag": "recheck", "window": [a, b]},
     ))
+    frames_billed = data["usage"].get("video_frames_processed") or sam.billed_frames(b - a + 1)
+    ctx.recheck_usd += frames_billed * sam.PRICE_PER_1K_FRAMES / 1000  # also on a cache hit
+    ctx.recheck_spend_usd += cost  # new spend only
     recs = parse_output(data["output_text"])
     return [r.model_copy(update={"frame_index": r.frame_index + a}) for r in recs]  # window -> clip index
 
@@ -483,35 +544,39 @@ def run_agent(ctx: AgentContext, *, allow_closed: bool = False, chat_fn=llm.chat
               run_log: Path = RUN_LOG, render: bool = True,
               max_cost_usd: float | None = None) -> RunResult:
     """Run the agent on one clip. ``max_cost_usd`` stops before a turn that would
-    likely cross the budget (judged from the previous turn's cost)."""
+    likely cross the budget (judged from the previous turn's cost). Host, view and recheck
+    limits come from ``ctx.config``; ``allow_closed`` also admits Muse Spark 1.3."""
+    cfg = ctx.config
     messages: list[dict] = [
-        {"role": "system", "content": system_prompt(ctx.rules)},
+        {"role": "system", "content": system_prompt(ctx.rules, cfg.extra_instructions)},
         {"role": "user", "content": inventory_prompt(ctx)},
     ]
-    tools = TOOLS
+    tools = make_tools(cfg.max_views, cfg.max_rechecks)
     if ctx.proposer is not None:  # hybrid run, even with zero proposals
         from .hybrid import proposals_prompt
 
         messages.append({"role": "user", "content": proposals_prompt(ctx.proposals)})
-        tools = HYBRID_TOOLS if ctx.proposals else TOOLS
+        tools = hybrid_tools(tools) if ctx.proposals else tools
     providers: list[str] = []
     served: list[str] = []
-    cost = 0.0
+    cost = 0.0  # new spend (cache hits are free)
+    call_cost = 0.0  # what the calls cost when made: the report's cost
     turns = 0
     nudged = False
     tool_counts: dict[str, int] = {}
     last_cost = 0.0
     budget_stop = False
-    for turns in range(1, MAX_TURNS + 1):  # noqa: B007 (turns is reported after the loop)
+    for turns in range(1, cfg.max_turns + 1):  # noqa: B007 (turns is reported after the loop)
         if max_cost_usd is not None and cost + last_cost > max_cost_usd:
             budget_stop, turns = True, turns - 1
             break
         res = chat_fn(window_images(messages), video_sha256=ctx.meta.video_sha256, tools=tools, params=PARAMS,
-                      allow_closed=allow_closed)
+                      order=cfg.order, allow_closed=allow_closed or cfg.allow_closed)
         providers.append(res.provider)
         served.append(res.model_served or "")
         cost += res.cost_usd
-        last_cost = res.cost_usd
+        call_cost += res.call_cost_usd
+        last_cost = res.call_cost_usd
         msg = _clean(res.message)
         messages.append(msg)
         calls = msg.get("tool_calls", [])
@@ -535,12 +600,12 @@ def run_agent(ctx: AgentContext, *, allow_closed: bool = False, chat_fn=llm.chat
             ctx.pending_images = []
         if ctx.finished:
             break
-    hit_cap = not ctx.finished and turns >= MAX_TURNS
+    hit_cap = not ctx.finished and turns >= cfg.max_turns
 
     findings = finalize(ctx.findings)
     if render and findings:
         render_frames(ctx.meta, {f.frame_index for f in findings}, ctx.plate_tracks)
-    report = build_report(ctx, findings, providers, served, cost, len(providers))
+    report = build_report(ctx, findings, providers, served, call_cost, len(providers))
     _log_run(run_log, ctx, turns, hit_cap, providers, cost, findings, tool_counts, budget_stop)
     return RunResult(report, turns, hit_cap, providers, served, cost, ctx.rejections, tool_counts,
                      budget_stop)
@@ -596,10 +661,11 @@ def _log_run(path: Path, ctx: AgentContext, turns: int, hit_cap: bool, providers
            "clip": ctx.meta.source.filename, "turns": turns, "hit_turn_cap": hit_cap,
            "finished": ctx.finished, "providers": providers, "cost_usd": round(cost, 4),
            "n_findings": len(findings), "n_rejections": len(ctx.rejections), "rechecks": ctx.rechecks,
-           "views": ctx.views, "tool_counts": tool_counts or {}, "stopped_for_budget": budget_stop,
+           "views": ctx.views, "config": ctx.config.name, "tool_counts": tool_counts or {},
+           "stopped_for_budget": budget_stop,
            "baseten_spend_usd": round(usage.provider_spend("baseten"), 4)}
     if hit_cap:
-        rec["warning"] = f"hit the {MAX_TURNS}-turn cap before finish"
+        rec["warning"] = f"hit the {ctx.config.max_turns}-turn cap before finish"
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(rec) + "\n")

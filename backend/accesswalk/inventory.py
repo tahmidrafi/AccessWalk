@@ -143,6 +143,21 @@ def find_duplicates(tracks: list[Track], min_iou: float = 0.6, min_shared: float
     return dup
 
 
+def _write_atomic(path: Path, frame: np.ndarray) -> None:
+    """Write a JPEG so no reader ever sees half a file, even with several runs rendering
+    the same frame at once (Windows refuses a write to a file another process has open,
+    and a failed cv2.imwrite only returns False). The bytes do not depend on who wins."""
+    tmp = path.with_name(f".{path.stem}.{os.getpid()}.jpg")
+    if not cv2.imwrite(str(tmp), frame, [cv2.IMWRITE_JPEG_QUALITY, 88]):
+        raise RuntimeError(f"could not write {tmp}")
+    try:
+        os.replace(tmp, path)
+    except PermissionError:  # another run is replacing it with the same bytes
+        tmp.unlink(missing_ok=True)
+        if not path.exists():
+            raise
+
+
 def render_frames(
     meta: IngestMeta,
     frame_indices: set[int],
@@ -191,7 +206,7 @@ def render_frames(
                         k = max(15, (min(x2 - x1, y2 - y1) // 2) | 1)
                         frame[y1:y2, x1:x2] = cv2.GaussianBlur(frame[y1:y2, x1:x2], (k, k), 0)
                 path = out_dir / f"{i}.jpg"
-                cv2.imwrite(str(path), frame, [cv2.IMWRITE_JPEG_QUALITY, 88])
+                _write_atomic(path, frame)
                 written[i] = path
             i += 1
     finally:
