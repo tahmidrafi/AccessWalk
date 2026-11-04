@@ -2,9 +2,15 @@
 
 **Know before you go.** Film the walk from the bus stop or parking spot to the entrance on a phone.
 AccessWalk turns that video into an accessibility report for wheelchair users: the barriers along the
-route, each tied to an object SAM 3.1 tracked and the video frame it was seen in.
+route, each tied to an object [SAM 3.1](https://dev.meta.ai/docs/sam/overview) tracked and the video frame it was seen in.
 
-<p align="center"><img src="docs/media/hero.gif" alt="Walking a sidewalk with a traffic barrel on it; SAM 3.1 boxes follow the barrels, a pole and the vegetation with stable ids" width="300"></p>
+<table align="center">
+  <tr>
+    <td align="center" width="32%"><img src="docs/media/hero-barrels.gif" alt="Walking toward traffic barrels standing on the sidewalk; SAM 3.1 boxes follow each barrel, a pole and the vegetation with stable ids" width="100%"><br><sub>Barrels on the walk</sub></td>
+    <td align="center" width="32%"><img src="docs/media/hero-steps.gif" alt="Walking up to a flight of seven concrete steps; SAM 3.1 tracks them as stairs #0" width="100%"><br><sub>7 steps, no ramp</sub></td>
+    <td align="center" width="32%"><img src="docs/media/hero-slab.gif" alt="Heaved sidewalk slabs beside a tree trunk; SAM 3.1 tracks them as raised slab #0 to #4" width="100%"><br><sub>Heaved slabs by a tree</sub></td>
+  </tr>
+</table>
 
 **Live:** https://rafi-tahmid--accesswalk-web.us-east.modal.run (open "Try a sample route").
 Built solo for the Meta Global AI Developer Hackathon (indie track).
@@ -26,26 +32,20 @@ It is a screening tool for planning a trip or an audit. It does not certify ADA 
 not real-time navigation. Anything judged from depth, height or slope in a phone video is marked
 `verify_manually`.
 
-<table>
-  <tr>
-    <th width="50%">What SAM tracks</th>
-    <th width="50%">What the report says</th>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="docs/media/sam-tracks-steps.gif" alt="SAM 3.1 tracks a flight of concrete steps as stairs #0 while walking up to a house" width="200">
-      <img src="docs/media/sam-tracks-slab.gif" alt="SAM 3.1 tracks heaved sidewalk slabs next to a tree as raised slab #0 to #4" width="200">
-    </td>
-    <td><img src="docs/media/report-finding.png" alt="The report's finding for the steps: steps without a ramp, high severity, cited to track stairs-0 on frame 60 with the box over the frame" width="420"></td>
-  </tr>
-</table>
+## What the report shows
+
+<p align="center"><img src="docs/media/report-finding.png" alt="A confirmed finding from the demo report: concrete steps to a brick house entrance with no ramp in view, high severity, verify manually, cited to track stairs-0 on frame 60, with the stairs boxed on the frame" width="100%"></p>
+
+The demo route's steps finding: what was found, how sure, the ADA reference it is based on, and the
+tracked object (`stairs-0`) and frame it cites, with the box drawn on that frame.
 
 ## How it works
 
 <p align="center"><img src="docs/media/pipeline.png" alt="How AccessWalk works: walk, privacy blur, SAM 3.1 tracking, review with Muse Spark 1.3, report" width="860"></p>
 
 1. **Upload** a 15 s to 2 min walkthrough (`.mp4`/`.mov` from a phone, held upright).
-2. **Privacy first, locally:** faces are detected and blurred on every source frame (OpenCV YuNet)
+2. **Privacy first, locally:** faces are detected and blurred on every source frame
+   ([OpenCV YuNet](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet))
    before any frame leaves the machine. GPS and all other metadata are stripped from every derived
    file. License plates are blurred in everything published, using SAM's own `license plate` tracks.
 3. **Track:** SAM 3.1 segments and tracks 14 noun phrases across the clip (bins, cars, poles,
@@ -53,7 +53,7 @@ not real-time navigation. Anything judged from depth, height or slope in a phone
    handrails, doorknobs, vegetation, plates). Each object keeps one identity across frames.
 4. **Inventory:** tracks are stitched, de-duplicated across phrases, given a best keyframe, and
    measured against the sidewalk mask (how much of an object stands on the walkway).
-5. **Verify (agent):** a Muse Spark 1.3 agent reviews the inventory against 8 rule-based checks, with
+5. **Verify (agent):** a [Muse Spark 1.3](https://dev.meta.ai/docs/models) agent reviews the inventory against 8 rule-based checks, with
    tools to read a track, look at frames, re-run SAM with a new phrase on a time window, and cite a
    finding. A finding without a valid track and frame citation is dropped.
 6. **Second look (video pass):** Muse Spark 1.3 also watches the blurred video once. Barriers it sees
@@ -100,19 +100,20 @@ flowchart LR
 | Review stage (two-tier and the other evaluated systems) | `backend/accesswalk/review.py`, `combine.py`, `grounded.py` |
 | Rules and citation validator | `backend/accesswalk/rules.yaml`, `validator.py` |
 | Route verdict | `backend/accesswalk/verdict.py` |
-| API (upload, job status, reports, media) | `backend/accesswalk/api.py`, `jobs.py` |
+| API ([FastAPI](https://fastapi.tiangolo.com): upload, job status, reports, media) | `backend/accesswalk/api.py`, `jobs.py` |
 | Report contract (pydantic → JSON Schema) | `backend/accesswalk/schemas.py`, `frontend/src/schema/` |
-| Report UI | `frontend/` (React + Vite) |
+| Report UI | `frontend/` ([React](https://react.dev) + [Vite](https://vite.dev)) |
 | Eval harness and baseline | `eval/`, `backend/accesswalk/scoring.py`, `baseline.py` |
 | Deploy | `deploy/modal_app.py`, `scripts/deploy_bundle.py` |
 
 ### Meta AI tooling
-- **SAM 3.1** (Meta Model API): video tracking with stable object identity, which is what makes
+- **SAM 3.1** ([Meta Model API](https://dev.meta.ai/docs/overview)): video tracking with stable object identity, which is what makes
   route-level reasoning possible (one bin seen across 40 frames is one bin).
 - **Muse Spark 1.3** (Meta Model API): the verification agent (tool calls over the tracks and frames)
   and the video pass that adds "possible" findings. Every model call logs the provider and the model
   that served it.
-- **Muse Spark Open** (open weights on Baseten, Fireworks as failover): the same agent runs on it with
+- **[Muse Spark Open](https://dev.meta.ai/docs/muse-spark-open)** (open weights on
+  [Baseten](https://www.baseten.co), [Fireworks AI](https://fireworks.ai) as failover): the same agent runs on it with
   `ACCESSWALK_REVIEW=open`; it was the first shipped version and is in the eval table.
 
 ## Evaluation
@@ -210,7 +211,7 @@ on the upload page opens its finished report with no upload at all (`VITE_SAMPLE
 ## Deploy (Modal)
 Live: https://rafi-tahmid--accesswalk-web.us-east.modal.run (sample route and reports; uploads need the passcode).
 
-One Modal app serves the API and the built UI on one URL, on CPU only, scaling to zero. It is public
+One [Modal](https://modal.com) app serves the API and the built UI on one URL, on CPU only, scaling to zero. It is public
 and read-only: sample route, reports, blurred media. Uploads need a passcode, and they stop once the
 spend caps are used ($1 per job, $5 a day, $10 in total). The data volume holds blurred media and
 model caches only: no raw video, no `sam.mp4`, no face-only proxy.
@@ -243,3 +244,46 @@ Oct 28, 2026 (see `git log`), with no imported code. The day-by-day task list an
 `PROGRESS.md`; the working rules are in `CLAUDE.md`. Code was written with Claude Code (pipeline and
 frontend as two parallel sessions). The videos were filmed for this project; raw footage, audio and
 unblurred frames are never committed.
+
+## License
+- **Code:** MIT, see [`LICENSE`](LICENSE). Copyright 2026 Tahmid Rafi.
+- **Media and labels:** the footage-derived media in `docs/media/` (blurred GIFs, report screenshot,
+  cards) and the annotations in `data/annotations/` are under
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- **Third-party parts keep their own licenses:**
+  - The YuNet face-detection model (`face_detection_yunet_2023mar.onnx`, downloaded into `models/`,
+    not committed) is MIT, Copyright (c) 2020 Shiqi Yu
+    ([license](https://github.com/opencv/opencv_zoo/blob/main/models/face_detection_yunet/LICENSE)).
+  - The UI fonts, installed through [Fontsource](https://fontsource.org), are under the
+    [SIL Open Font License 1.1](https://openfontlicense.org):
+    [Fraunces](https://github.com/undercasetype/Fraunces) (Copyright 2020 The Fraunces Project
+    Authors) and [Atkinson Hyperlegible](https://www.brailleinstitute.org/freefont/) (Copyright 2020
+    Braille Institute of America, Inc.).
+
+## Acknowledgements and references
+- **Meta models and API:** [SAM 3.1](https://dev.meta.ai/docs/sam/overview) for video segmentation and
+  tracking, [Muse Spark 1.3](https://dev.meta.ai/docs/models) for review, and
+  [Muse Spark Open](https://dev.meta.ai/docs/muse-spark-open) for the open-weight agent, all through
+  the [Meta Model API](https://dev.meta.ai/docs/overview). Meta's
+  [`meta-sam-parser`](https://pypi.org/project/meta-sam-parser/) decodes SAM masks.
+- **Hosting credits:** [Baseten](https://www.baseten.co) and [Fireworks AI](https://fireworks.ai)
+  (Muse Spark Open inference) and [Modal](https://modal.com) (the deployed app), through the
+  hackathon's partner credits.
+- **Face blur:** [OpenCV](https://github.com/opencv/opencv) and the
+  [YuNet](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet) model from
+  opencv_zoo.
+- **Accessibility references:** the checks in `backend/accesswalk/rules.yaml` cite the
+  [2010 ADA Standards for Accessible Design](https://www.ada.gov/law-and-regs/design-standards/2010-stds/)
+  (206.2, 303.2-303.4, 309.4, 403.5.1, 404.2.7, 405, 405.8, 406, 505 and 705), 28 CFR 35.151(i) on curb ramps,
+  and the U.S. Access Board's [2023 PROWAG](https://www.access-board.gov/prowag/) (R302, R302.3). Every
+  reference is shown as context for screening, not as a compliance finding.
+- **Open-source libraries:** backend: [FastAPI](https://fastapi.tiangolo.com),
+  [Uvicorn](https://uvicorn.dev), [Pydantic](https://pydantic.dev),
+  [OpenAI Python SDK](https://github.com/openai/openai-python) (for the OpenAI-compatible endpoints),
+  [HTTPX](https://www.python-httpx.org), [NumPy](https://numpy.org), [pandas](https://pandas.pydata.org),
+  [Pillow](https://python-pillow.org), [PyYAML](https://pyyaml.org), ffmpeg; tests and lint:
+  [pytest](https://docs.pytest.org), [Ruff](https://docs.astral.sh/ruff/). Frontend:
+  [React](https://react.dev), [Vite](https://vite.dev), [Vitest](https://vitest.dev),
+  [Oxlint](https://oxc.rs), [Ajv](https://ajv.js.org),
+  [json-schema-to-typescript](https://github.com/bcherny/json-schema-to-typescript),
+  [Fontsource](https://fontsource.org).
