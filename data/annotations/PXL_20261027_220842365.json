@@ -12,7 +12,7 @@
       ],
       "sev": "medium",
       "note": "The sidewalk gradually engulfed by mud-grass just before going on a culvert, during rain the wet mud can trap wheelchair wheels.",
-      "verify": "true",
+      "verify": true,
       "temporary": false
     }
   ],

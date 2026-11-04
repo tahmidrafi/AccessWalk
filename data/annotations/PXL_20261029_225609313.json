@@ -10,9 +10,9 @@
         0.5,
         29.036
       ],
-      "sev": "medium",
+      "sev": "high",
       "note": "fallen branch on the sidewalk",
-      "verify": false,
+      "verify": true,
       "temporary": true
     }
   ],

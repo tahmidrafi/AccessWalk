@@ -1,20 +1,26 @@
 {
   "clip": "PXL_20261027_214453883",
   "annotator": "tahmid",
-  "status": "draft",
+  "status": "done",
   "duration_s": 50.138,
-  "barriers": [],
+  "barriers": [
+    {
+      "check": "narrow_passage",
+      "t": [
+        2.0,
+        50.138
+      ],
+      "sev": "high",
+      "note": "Sidewalk narrows by tree, electric poles, other electrical conduits coming from underground, and mud/vegetation cover.",
+      "verify": false,
+      "temporary": false
+    }
+  ],
   "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "not_applicable": [
+    "round_doorknob",
+    "steps_without_ramp",
+    "missing_handrail"
+  ],
+  "notes": ""
 }

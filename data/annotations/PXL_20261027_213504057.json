@@ -1,20 +1,40 @@
 {
   "clip": "PXL_20261027_213504057",
   "annotator": "tahmid",
-  "status": "draft",
+  "status": "done",
   "duration_s": 34.366,
-  "barriers": [],
-  "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "barriers": [
+    {
+      "check": "surface_damage",
+      "t": [
+        8.0,
+        34.366
+      ],
+      "sev": "medium",
+      "note": "Broken slab by the curb",
+      "verify": false
+    },
+    {
+      "check": "surface_damage",
+      "t": [
+        8.5,
+        34.366
+      ],
+      "sev": "low",
+      "note": "Metal access plate with gap and protrusion above ground greater than 0.5 inch",
+      "verify": true
+    }
+  ],
+  "clean": [
+    [
+      0.0,
+      8.0
+    ]
+  ],
+  "not_applicable": [
+    "round_doorknob",
+    "steps_without_ramp",
+    "missing_handrail"
+  ],
+  "notes": ""
 }
