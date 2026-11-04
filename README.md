@@ -30,7 +30,7 @@ Built solo for the Meta Global AI Developer Hackathon (indie track).
 ### The 8 checks
 Sidewalk obstruction · surface damage (heaved or broken slabs) · missing curb ramp · sidewalk ends ·
 steps without a ramp · missing handrail · round doorknob · narrow passage.
-Checks that score poorly in the eval are dropped rather than shown with weak numbers.
+Each check's recall and precision are in [Evaluation](#evaluation), weak ones included.
 
 ## Architecture
 
@@ -72,20 +72,93 @@ flowchart LR
 
 ## Evaluation
 
-> **Results pending.** Ground truth is being annotated (22 clips filmed on a Pixel 8 Pro; 5 marked
-> done so far). Numbers go here once the eval set is complete.
+22 clips filmed on a Pixel 8 Pro (746 s, 28 labelled barriers, 221 s labelled clean), split before any
+tuning:
+- **Development set:** the 11 Oct-29 clips (15 barriers). Rules and prompts were tuned on these only.
+- **Held-out test set:** the 11 Oct-27 clips (13 barriers: 7 surface damage, 4 narrow passage, 2
+  sidewalk ends; 126 s clean). Nobody looked at agent output for them while tuning or labelling. The
+  final runs on them were made once, after the labels were committed.
+- **Shipping rule, fixed before the held-out runs:** ship v2 unless the hybrid v3 beats it by 3 or more
+  barriers in recall over all 22 clips, with precision no worse. It did not (14 of 28 against 16 of 28),
+  so **v2 ships**.
+
+Systems:
+- **v2 (shipped):** the verification agent (Muse Spark Open on Baseten) over SAM 3.1 tracks, current rules.
+- **v1:** the same agent with the Oct-30 rules.
+- **v3 (not shipped, branch `hybrid-proposals`):** Muse Spark Open first watches the blurred video and
+  proposes candidate barriers; the agent then verifies each one against the tracks and cites as usual.
+- **Proposer alone:** those Muse Spark Open proposals, unverified.
+- **Baseline:** Muse Spark 1.3 (closed) watches the blurred video once. No tools, no tracking.
+
+### Held-out test set (Oct-27, 11 clips, 13 barriers)
+
+| System | Recall | Precision | Recall, merged width | Precision, merged width | Review cost |
+|---|---|---|---|---|---|
+| **v2 agent (shipped)** | **54% (7/13)** | **90% (9/10)** | 54% | 90% | $1.67 |
+| v1 agent | 46% (6/13) | 86% (6/7) | 46% | 86% | $1.32 |
+| v3 hybrid | 54% (7/13) | 88% (7/8) | 54% | 88% | $1.70 |
+| Proposer alone (Muse Spark Open, video) | 62% (8/13) | 53% (8/15) | 62% | 59% | $0.17 |
+| Baseline (Muse Spark 1.3, video) | 69% (9/13) | 90% (9/10) | 69% | 91% | $0.18 |
+
+### All 22 clips (28 barriers)
+
+| System | Recall | Precision | Recall, merged width | Precision, merged width | Review cost |
+|---|---|---|---|---|---|
+| **v2 agent (shipped)** | **57% (16/28)** | **90% (18/20)** | 61% | 90% | $3.48 |
+| v1 agent | 54% (15/28) | 88% (15/17) | 61% | 89% | $2.84 |
+| v3 hybrid | 50% (14/28) | 88% (14/16) | 57% | 89% | $3.75 |
+| Proposer alone (Muse Spark Open, video) | 64% (18/28) | 58% (18/31) | 71% | 63% | $0.34 |
+| Baseline (Muse Spark 1.3, video) | 64% (18/28) | 95% (18/19) | 68% | 95% | $0.41 |
+
+Per check, all 22 clips, strict (recall and precision):
+
+| Check | Barriers | v2 agent | Baseline |
+|---|---|---|---|
+| Sidewalk obstruction | 8 | 6/8 · 100% | 6/8 · 100% |
+| Narrow passage | 8 | 4/8 · 83% | 4/8 · 100% |
+| Surface damage | 7 | 3/7 · 100% | 4/7 · 100% |
+| Sidewalk ends | 3 | 1/3 · 100% | 2/3 · 100% |
+| Steps without ramp | 1 | 1/1 · 50% | 1/1 · 50% |
+| Missing handrail | 1 | 1/1 · 100% | 1/1 · 100% |
+| Missing curb ramp, round doorknob | 0 | not measured | not measured |
+
+How to read this:
+- **The no-tools baseline has the best recall** (69% against 54% held out) at about the same
+  precision, for about a tenth of the review cost and with no SAM. The agent does not win on recall.
+  What it adds is grounding: every agent finding cites a SAM track and a frame where that object is
+  boxed, checked by the validator, so the report shows the object. A baseline finding is a timestamp
+  and a sentence that nothing checks.
+- **Precision rests on few false positives.** Only 221 s are labelled clean, and a finding outside every
+  labelled range is not scored. One held-out false positive (steps without a ramp) is shared by all five
+  systems.
+- **Weakest checks:** surface damage and sidewalk ends. No clip has a labelled curb ramp or doorknob,
+  so those two checks are not measured.
+- **The open-weight proposer finds more but is wrong often** (58% precision). In the hybrid, the agent
+  rejects most of its mistakes but also some correct proposals, and ends below v2.
+- **The sample is small** (28 barriers). Gaps of 1-2 barriers are within the run-to-run variation seen
+  on the development set.
+
+Review cost is the reviewing model's calls on those clips (for v3, agent plus proposer). The agent
+systems also pay for SAM 3.1 tracking: $4.66 for the held-out clips and $10.44 for all 22 (14 phrases at
+5 fps). The baselines need no SAM.
 
 Method (`eval/run_eval.py`, no network, no spend):
-- Ground truth per clip in `data/annotations/` (barrier check, time, severity; clean stretches;
-  checks not applicable). Only clips marked `done` are scored.
-- A finding matches a barrier of the same check within ±1 s, and hits at most one barrier, so
-  overlapping barriers need a finding each. Precision and recall per check.
-- Baseline: Muse Spark 1.3 on the raw video with no tools and no tracking (`baseline-v1`), scored the
-  same way, against the agent run frozen as `v1`.
+- Ground truth per clip in `data/annotations/`: barrier check, time range, severity, clean stretches, and
+  checks that cannot occur on the clip.
+- A finding matches a barrier of the same check within ±1 s and hits at most one barrier, so
+  overlapping barriers need a finding each. A finding in a clean stretch, or of a check marked not
+  applicable, is a false positive. Anything else is not scored.
+- **Merged width** scores sidewalk obstruction and narrow passage as one check, since whether a parked
+  car or a pole "blocks" or "narrows" the walk is a judgement call.
+- Every run is frozen before scoring (`scripts/freeze_run.py`: read-only copies plus a committed
+  manifest of hashes in `eval/runs/`).
 
-| Check | Agent precision | Agent recall | Baseline precision | Baseline recall |
-|---|---|---|---|---|
-| _pending_ | | | | |
+```
+micromamba run -n accesswalk python eval/run_eval.py --clips PXL_20261027_,PXL_20261028_ \
+  --system agent:v2+v2-heldout --system agent:v1 --system agent:v3+v3-heldout \
+  --system baseline:proposer-open-v1+proposer-open-heldout --system baseline:baseline-v1
+```
+(drop `--clips` for all 22 clips; add `--merge-width` for the merged scores)
 
 ## Privacy
 - Faces are blurred locally before any frame goes to a model. Raw videos never leave the machine and
@@ -96,8 +169,8 @@ Method (`eval/run_eval.py`, no network, no spend):
 
 ## Cost and caching
 Every model call is cached by (video hash, model, prompt, params) under `data/cache/`, and logged with
-its provider, model and usage to `data/out/usage.jsonl`. Re-runs are free. A 24 s clip costs about
-$0.40 end to end (SAM ~$0.29 for 14 phrases at 5 fps, agent ~$0.10). Each job has a $1 cap checked
+its provider, model and usage to `data/out/usage.jsonl`. Re-runs are free. The 24 s demo clip costs
+about $0.43 end to end (SAM ~$0.29 for 14 phrases at 5 fps, agent ~$0.13). Each job has a $1 cap checked
 before any paid call; the deployed server also has daily and total caps.
 
 ## Run it locally

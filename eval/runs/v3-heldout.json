@@ -1,0 +1,94 @@
+{
+  "run": "v3-heldout",
+  "n_clips": 11,
+  "clips": {
+    "PXL_20261027_211833467": {
+      "sha256": "b00a41c848b79f215029ab0fe4218bdfa90a8c7624a8e38a41336eea11a959eb",
+      "created_at": "2026-11-04T02:12:38+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.1971,
+      "closed_fallback": false
+    },
+    "PXL_20261027_213504057": {
+      "sha256": "6b0dfcd33902480a9f5dbc662b94291d8a5086ec04bc27a7287628900f6cc5ce",
+      "created_at": "2026-11-04T02:14:54+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.1138,
+      "closed_fallback": false
+    },
+    "PXL_20261027_214453883": {
+      "sha256": "b39da2762754b82a42e163f7bcf2e729fe2b2171dd3035670cc21a236b44c106",
+      "created_at": "2026-11-04T02:17:01+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.1431,
+      "closed_fallback": false
+    },
+    "PXL_20261027_220842365": {
+      "sha256": "1bcbc0b5e043def2dd84a69727119b28b2419c568dd2a55a4908316167f805bb",
+      "created_at": "2026-11-04T02:19:53+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.2142,
+      "closed_fallback": false
+    },
+    "PXL_20261027_220924271": {
+      "sha256": "23bfe083703a3c17b4d11191396c524212cf80ec9a33c473befe0b939c766912",
+      "created_at": "2026-11-04T02:22:46+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.1695,
+      "closed_fallback": false
+    },
+    "PXL_20261027_221252714": {
+      "sha256": "7f6092016f4543030230b0fafbdbe63336c0e06fd32903e62f8282d9aed347bb",
+      "created_at": "2026-11-04T02:24:44+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.1097,
+      "closed_fallback": false
+    },
+    "PXL_20261027_224621833": {
+      "sha256": "e6eb42480fd39d4ca41095251bc53282959d40a968a96b65e5c7bece44b71dae",
+      "created_at": "2026-11-04T02:26:07+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.1113,
+      "closed_fallback": false
+    },
+    "PXL_20261027_224805654": {
+      "sha256": "5f3df6b567260c8c5e145c494987373c9ab9136081ef1d475edf4f74709e2984",
+      "created_at": "2026-11-04T02:27:30+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.1351,
+      "closed_fallback": false
+    },
+    "PXL_20261027_224931168": {
+      "sha256": "423d50e46ba46843bea11421c7c0fe1a9706c2b224ab74c9524cee6ffb849ed4",
+      "created_at": "2026-11-04T02:29:11+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.1471,
+      "closed_fallback": false
+    },
+    "PXL_20261027_225049085": {
+      "sha256": "7f29697b292cc3e3d388044de122f46f0b9f986b90cb22678948c7a54afe6e84",
+      "created_at": "2026-11-04T02:30:32+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.072,
+      "closed_fallback": false
+    },
+    "PXL_20261028_002145281": {
+      "sha256": "b849b6487f4dba0c9ceba436491db6edd4d3c1eda56681922d1e0ef23c874e2f",
+      "created_at": "2026-11-04T02:32:03+00:00",
+      "provider": "baseten",
+      "model": "meta-models/muse-spark-open-1026",
+      "cost_usd": 0.1176,
+      "closed_fallback": false
+    }
+  }
+}
