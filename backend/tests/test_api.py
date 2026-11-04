@@ -53,10 +53,13 @@ def _client(tmp_path, pipeline=fake_pipeline):
     return TestClient(app)
 
 
-def test_health(tmp_path):
+def test_health(tmp_path, monkeypatch):
+    monkeypatch.delenv("ACCESSWALK_REVIEW", raising=False)
     body = _client(tmp_path).get("/api/health").json()
     api_models.Health.model_validate(body)
-    assert body["ok"] and body["agent_provider"] == "baseten"
+    assert body["ok"] and (body["agent_provider"], body["agent_model"]) == ("meta", "muse-spark-1.3")
+    monkeypatch.setenv("ACCESSWALK_REVIEW", "open")  # the open-weight agent, kept for comparison
+    assert _client(tmp_path / "open").get("/api/health").json()["agent_provider"] == "baseten"
 
 
 def test_job_lifecycle_to_report(tmp_path, tiny_mp4):

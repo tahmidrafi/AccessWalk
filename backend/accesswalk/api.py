@@ -27,7 +27,7 @@ from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
-from . import jobs, llm, sam
+from . import jobs, review, sam
 from .api_models import (
     MAX_DURATION_S,
     MAX_UPLOAD_MB,
@@ -86,8 +86,8 @@ def create_app(
 
     @app.get("/api/health", response_model=Health)
     def health() -> Health:
-        p = llm.providers_from_env()["baseten"]
-        return Health(ok=True, agent_provider=p.name, agent_model=p.model, sam_model=sam.MODEL,
+        provider, model = review.review_model()  # the shipped two-tier review runs on Muse Spark 1.3
+        return Health(ok=True, agent_provider=provider, agent_model=model, sam_model=sam.MODEL,
                       uploads="passcode" if os.getenv("ACCESSWALK_UPLOAD_PASSCODE") else "open")
 
     @app.post("/api/jobs", response_model=JobStatus, status_code=202)

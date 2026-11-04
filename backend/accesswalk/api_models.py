@@ -52,8 +52,8 @@ UploadMode = Literal["open", "passcode"]
 class Health(BaseModel):
     ok: bool
     api_version: str = API_VERSION
-    agent_provider: str  # primary host, e.g. "baseten"
-    agent_model: str  # e.g. "meta-models/muse-spark-open-1026"
+    agent_provider: str  # review host: "meta" (two-tier, default) or "baseten" (ACCESSWALK_REVIEW=open)
+    agent_model: str  # e.g. "muse-spark-1.3" or "meta-models/muse-spark-open-1026"
     sam_model: str
     # "passcode": POST /api/jobs needs the form field ``passcode`` (the deployed demo server)
     uploads: UploadMode = "open"

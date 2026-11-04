@@ -21,7 +21,7 @@ import os
 from collections.abc import Callable
 from pathlib import Path
 
-from . import baseline, combine, grounded, hybrid
+from . import baseline, combine, grounded, hybrid, llm
 from .agent import CONFIGS, AgentContext, run_agent
 from .ingest import DEFAULT_OUT_ROOT
 from .inventory import render_frames
@@ -132,6 +132,17 @@ def selected() -> str:
     if name not in REVIEWS:
         raise ValueError(f"ACCESSWALK_REVIEW={name!r}; use one of {sorted(REVIEWS)}")
     return name
+
+
+OPEN_REVIEWS = {"open", "hybrid-open"}  # every model call on Muse Spark Open (Baseten, Fireworks failover)
+
+
+def review_model(name: str | None = None) -> tuple[str, str]:
+    """(provider, model) the named review runs on, for /api/health."""
+    if (name or selected()) in OPEN_REVIEWS:
+        p = llm.providers_from_env()["baseten"]
+        return p.name, p.model
+    return llm.CLOSED_PROVIDER, llm.CLOSED_MODEL
 
 
 def run_review(ctx: AgentContext, out_root: Path = DEFAULT_OUT_ROOT, budget: float = 0.5,
