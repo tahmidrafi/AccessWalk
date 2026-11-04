@@ -4,9 +4,7 @@
 AccessWalk turns that video into an accessibility report for wheelchair users: the barriers along the
 route, each tied to an object SAM 3.1 tracked and the video frame it was seen in.
 
-<!-- MEDIA SLOT 1 · hero GIF: walkthrough with the SAM tracking overlay · file: docs/media/hero.gif
-<p align="center"><img src="docs/media/hero.gif" alt="Walking a sidewalk; SAM 3.1 boxes and masks follow bins, barrels and stairs with stable ids" width="720"></p>
--->
+<p align="center"><img src="docs/media/hero.gif" alt="Walking a sidewalk with a traffic barrel on it; SAM 3.1 boxes follow the barrels, a pole and the vegetation with stable ids" width="300"></p>
 
 **Live:** https://rafi-tahmid--accesswalk-web.us-east.modal.run (open "Try a sample route").
 Built solo for the Meta Global AI Developer Hackathon (indie track).
@@ -28,24 +26,23 @@ It is a screening tool for planning a trip or an audit. It does not certify ADA 
 not real-time navigation. Anything judged from depth, height or slope in a phone video is marked
 `verify_manually`.
 
-<!-- MEDIA SLOT 4 · two columns: what SAM tracks / what the report says (same moment) · files: docs/media/sam-tracks.png, docs/media/report-finding.png
 <table>
   <tr>
     <th width="50%">What SAM tracks</th>
     <th width="50%">What the report says</th>
   </tr>
   <tr>
-    <td><img src="docs/media/sam-tracks.png" alt="One frame with the objects SAM 3.1 tracked, each with its id"></td>
-    <td><img src="docs/media/report-finding.png" alt="The report's finding for the same moment, with its cited frame and note"></td>
+    <td align="center">
+      <img src="docs/media/sam-tracks-steps.gif" alt="SAM 3.1 tracks a flight of concrete steps as stairs #0 while walking up to a house" width="200">
+      <img src="docs/media/sam-tracks-slab.gif" alt="SAM 3.1 tracks heaved sidewalk slabs next to a tree as raised slab #0 to #4" width="200">
+    </td>
+    <td><img src="docs/media/report-finding.png" alt="The report's finding for the steps: steps without a ramp, high severity, cited to track stairs-0 on frame 60 with the box over the frame" width="420"></td>
   </tr>
 </table>
--->
 
 ## How it works
 
-<!-- MEDIA SLOT 2 · "how it works" pipeline image · file: docs/media/pipeline.png
-<p align="center"><img src="docs/media/pipeline.png" alt="Pipeline: local blur, SAM 3.1 tracking, inventory, two-tier review on Muse Spark 1.3, report" width="860"></p>
--->
+<p align="center"><img src="docs/media/pipeline.png" alt="How AccessWalk works: walk, privacy blur, SAM 3.1 tracking, review with Muse Spark 1.3, report" width="860"></p>
 
 1. **Upload** a 15 s to 2 min walkthrough (`.mp4`/`.mov` from a phone, held upright).
 2. **Privacy first, locally:** faces are detected and blurred on every source frame (OpenCV YuNet)
@@ -71,9 +68,7 @@ at 97% precision (31/32)**. Muse Spark 1.3 watching the same blurred video witho
 at 95%. Tracking adds the barriers a single look misses; the video pass adds the ones SAM has no
 object for. The clips were filmed and labelled by the author, so the numbers are indicative.
 
-<!-- MEDIA SLOT 3 · results card · file: docs/media/results.png
-<p align="center"><img src="docs/media/results.png" alt="Two-tier review: 79% recall at 97% precision; Muse Spark 1.3 on raw video: 64% at 95%; 22 clips" width="720"></p>
--->
+<p align="center"><img src="docs/media/results.png" alt="Barriers found on 22 filmed routes: AccessWalk 22/28 (79%) at 97% precision; Muse Spark 1.3 alone 18/28 (64%) at 95%" width="720"></p>
 
 All 12 systems compared, per-check notes and the method are in [Evaluation](#evaluation).
 

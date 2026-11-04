@@ -9,7 +9,8 @@ masks/ (PNGs + decoded mask arrays), sam/, llm/, baseline/ and grounded/ (cached
 responses: the two-tier review replays the raw-video pass from baseline/) and the
 recheck responses. Never: data/raw, proxy_noplate.mp4 (faces only), sam.mp4 and
 recheck clips (plates not blurred), audio.wav, logs. Plus the clip's
-report from data/out/reports/<clip>.json.
+report from data/out/reports/<clip>.json, and data/cache/showcase/*.mp4 (the landing
+page's hero clip, served at /media/showcase/<name>; rendered from a blurred proxy.mp4).
 
 --twin: a GPS-stripped copy of the clip (ffmpeg -c copy -map_metadata -1), the file
 the presenter uploads live. Its cache dir is staged too, so that upload replays
@@ -83,6 +84,12 @@ def main() -> int:
             raise SystemExit(f"{args.twin} still has a location tag: strip it (-map_metadata -1)")
         meta = ingest(args.twin)  # cached: only hashes the file
         print(f"twin {args.twin.name}: {stage_clip(meta.video_sha256)} files from {meta.video_sha256[:12]}")
+
+    showcase = sorted((DEFAULT_OUT_ROOT / "showcase").glob("*.mp4"))  # landing hero, from a blurred proxy
+    for f in showcase:
+        (BUNDLE / "cache" / "showcase").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(f, BUNDLE / "cache" / "showcase" / f.name)
+    print(f"showcase: {', '.join(f.name for f in showcase) or 'none'}")
 
     size = sum(f.stat().st_size for f in BUNDLE.rglob("*") if f.is_file())
     print(f"staged {BUNDLE.relative_to(REPO_ROOT)}: {size / 1e6:.1f} MB")

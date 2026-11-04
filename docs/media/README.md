@@ -9,7 +9,7 @@ or anything with a `.raw` name. Strip metadata from anything re-encoded (`-map_m
 | 1 · hero | `hero.gif` | Walkthrough with SAM tracking overlay (boxes / masks, stable ids) |
 | 2 · how it works | `pipeline.png` | Pipeline: ingest + blur → SAM 3.1 tracks → inventory → two-tier review → report |
 | 3 · results | `results.png` | Results card: two-tier 79% recall / 97% precision vs 64% / 95% video-only |
-| 4 · left | `sam-tracks.png` | What SAM tracks (one frame, tracked objects with ids) |
-| 4 · right | `report-finding.png` | What the report says about the same moment (finding card) |
+| 4 · left | `sam-tracks-steps.gif`, `sam-tracks-slab.gif` | What SAM tracks: the demo-route steps and a heaved-slab clip, side by side |
+| 4 · right | `report-finding.png` | What the report says about the steps (finding card with its box) |
 
-Each slot is an HTML comment in `README.md` with the `<img>` tag inside; uncomment it when the file lands.
+The slots are wired into `README.md`; `report-finding.png` is a headless-Chromium screenshot of the pinned demo report (finding 3, steps) served locally from `frontend/dist`.

@@ -47,6 +47,7 @@ load_dotenv(REPO_ROOT / ".env")
 VIDEO_TYPES = {".mp4": "video/mp4", ".mov": "video/quicktime"}
 MEDIA_PATH = re.compile(r"^(proxy\.mp4|frames/\d{1,5}\.jpg|masks/[A-Za-z0-9_-]{1,120}\.png)$")
 SHA = re.compile(r"^[0-9a-f]{64}$")
+SHOWCASE = re.compile(r"^[a-z0-9-]{1,40}\.(mp4|jpg|png)$")  # landing-page media, <media_root>/showcase/
 CHUNK = 1 << 20
 
 
@@ -159,6 +160,15 @@ def create_app(
         if r is None:
             raise ApiError(404, "not_found", f"no report {report_id}")
         return r
+
+    @app.get("/media/showcase/{name}")
+    def showcase(name: str) -> FileResponse:
+        """Landing-page media (hero.mp4), rendered from a blurred proxy.mp4 and staged by deploy_bundle."""
+        file = Path(media_root) / "showcase" / name
+        if not SHOWCASE.fullmatch(name) or not file.is_file():
+            raise ApiError(404, "not_found", "no such media")
+        ctype = {".mp4": "video/mp4", ".jpg": "image/jpeg", ".png": "image/png"}[file.suffix]
+        return FileResponse(file, media_type=ctype)
 
     @app.get("/media/{sha}/{path:path}")
     def media(sha: str, path: str) -> FileResponse:

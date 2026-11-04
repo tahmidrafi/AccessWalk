@@ -112,6 +112,18 @@ def test_media_serves_only_blurred_derived_files(tmp_path):
         assert c.get(bad).status_code == 404, bad
 
 
+def test_showcase_serves_only_named_landing_media(tmp_path):
+    c = _client(tmp_path)
+    (tmp_path / "media" / "showcase").mkdir()
+    (tmp_path / "media" / "showcase" / "hero.mp4").write_bytes(bytes(range(256)))
+    (tmp_path / "media" / "showcase" / "notes.json").write_text("{}")
+    r = c.get("/media/showcase/hero.mp4", headers={"Range": "bytes=0-9"})
+    assert r.status_code == 206 and r.headers["content-type"] == "video/mp4"
+    for bad in ["/media/showcase/notes.json", "/media/showcase/missing.mp4", "/media/showcase/..%2Fx.mp4",
+                "/media/showcase/Hero.MP4"]:
+        assert c.get(bad).status_code == 404, bad
+
+
 def test_restart_marks_unfinished_jobs_failed(tmp_path):
     st = jobs.JobStore(tmp_path / "jobs")
     job = st.create("t")
