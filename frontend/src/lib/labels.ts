@@ -52,6 +52,14 @@ export function checkResult(c: CheckSummary, tiers?: { confirmed: number; possib
   }
 }
 
+/** Hosts that serve the open-weight review model (Muse Spark Open); Meta's API serves the closed Muse Spark 1.3. */
+const OPEN_WEIGHT_PROVIDERS = new Set(['baseten', 'fireworks'])
+
+/** "open-weight review agent" only when the provider really serves the open-weight model. */
+export function reviewAgentLabel(provider: string): string {
+  return OPEN_WEIGHT_PROVIDERS.has(provider.toLowerCase()) ? 'open-weight review agent' : 'review agent'
+}
+
 /** Default file name for "Save as PDF": the document title at print time. */
 export function pdfTitle(report: Report): string {
   const day = report.run.created_at.slice(0, 10)
