@@ -27,7 +27,9 @@ def _blocks(f: Finding) -> bool:
 
 
 def _rating(findings: list[Finding], complete: bool) -> RouteRating:
-    if any(_blocks(f) for f in findings):
+    """From confirmed findings only: a "possible" one (raw-video pass, no SAM track) can
+    make a route "caution", never "likely_blocked"."""
+    if any(_blocks(f) for f in findings if f.tier == "confirmed"):
         return "likely_blocked"
     return "caution" if findings or not complete else "no_likely_barriers"
 
@@ -46,16 +48,26 @@ def _lead(rating: RouteRating, findings: list[Finding], key: list[Finding], comp
             return "The review stopped before it finished, so this route has not been fully checked."
         return ("No likely barriers were found on this route. "
                 "This is a screening result from video: conditions can change.")
+    confirmed = [f for f in findings if f.tier == "confirmed"]
+    n_possible = len(findings) - len(confirmed)
+    if not confirmed:
+        lead = (f"No barriers confirmed from tracked objects; {_plural(n_possible, 'possible barrier')} "
+                f"seen in the video to check on site. Top item: {key[0].title} at {_where(key[0])}.")
+        if not complete:
+            lead += " The review stopped before it finished, so there may be more."
+        return lead
     first = sorted(
-        (f for f in findings if rating != "likely_blocked" or _blocks(f)), key=lambda f: f.frame_ms
+        (f for f in confirmed if rating != "likely_blocked" or _blocks(f)), key=lambda f: f.frame_ms
     )[0]
-    n = _plural(len(findings), "likely barrier")
+    n = _plural(len(confirmed), "likely barrier")
     if rating == "likely_blocked":
         lead = (
             f"{n} found. A wheelchair may not get past this route: first at {_where(first)} ({first.title})."
         )
     else:
         lead = f"{n} found, none clearly blocking. Top item: {key[0].title} at {_where(key[0])}."
+    if n_possible:
+        lead += f" Also {_plural(n_possible, 'possible barrier')} seen in the video, to check on site."
     verify = sum(f.verify_manually for f in key)
     if verify:
         lead += " Check on site before relying on this: height, slope and width are judged from video alone."
@@ -76,7 +88,8 @@ def route_verdict(
     no findings then means not checked, never no barriers."""
     rating = _rating(findings, complete)
     ranked = sorted(
-        findings, key=lambda f: (not _blocks(f), -_SEVERITY_RANK[f.severity], -f.confidence, f.frame_ms)
+        findings, key=lambda f: (f.tier != "confirmed", not _blocks(f), -_SEVERITY_RANK[f.severity],
+                                 -f.confidence, f.frame_ms)
     )
     key = ranked[:MAX_KEY_FINDINGS]
     extra = _agent_text(agent_summary)

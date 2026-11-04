@@ -86,3 +86,14 @@ def test_never_says_violation_in_any_lead():
     for fs in ([], [_f()], [_f(sev="high")]):
         for complete in (True, False):
             assert "violation" not in route_verdict(fs, complete=complete).summary.lower()
+
+
+def test_possible_findings_never_block_and_follow_the_confirmed_ones():
+    possible = _f("f1", sev="high", ms=1000, title="Curb step").model_copy(update={"tier": "possible"})
+    steps = _f("f2", sev="high", ms=9000, title="Steps")
+    v = route_verdict([possible, steps])
+    assert v.rating == "likely_blocked" and v.key_finding_ids == ["f2", "f1"]
+    assert "1 likely barrier found" in v.summary and "(Steps)" in v.summary
+    assert "Also 1 possible barrier" in v.summary
+    only = route_verdict([possible])
+    assert only.rating == "caution" and only.summary.startswith("No barriers confirmed")

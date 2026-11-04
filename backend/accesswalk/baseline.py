@@ -50,8 +50,28 @@ class RawOutput(BaseModel):
     summary: str = ""
 
 
-def build_prompt(rules: Rules, width: int, height: int, duration_ms: int) -> str:
-    checks = "\n".join(f"- {cid}: {r.question}" for cid, r in rules.checks.items())
+# The raw-video pass asks its own fixed check questions: rules.yaml as of the baseline-v1 run
+# (before 54fc4eb). The agent's rules moved on; these are what the eval measured and what the
+# two-tier review sends, so their cached answers replay.
+RAW_PASS_QUESTIONS = {
+    "sidewalk_obstruction": "Does an object stand ON the walking surface and block part of its width?",
+    "surface_damage": "Is the walking surface heaved, broken, or uneven enough to catch a caster?",
+    "missing_curb_ramp": "Where the route meets a street crossing, is there a curb ramp, or only a "
+                         "curb step?",
+    "sidewalk_ends": "Does the paved walkway stop and continue as dirt, grass, or road?",
+    "steps_without_ramp": "Does the route include steps, and is there no ramp or level alternative in view?",
+    "missing_handrail": "Do steps or a ramp on the route lack a handrail on either side?",
+    "round_doorknob": "Does a door on the route open only with a round knob that needs grasping and "
+                      "twisting?",
+    "narrow_passage": "Is the clear walking width squeezed by vegetation, poles, or objects at the edges?",
+}
+
+
+def build_prompt(rules: Rules, width: int, height: int, duration_ms: int,
+                 questions: dict[str, str] | None = None) -> str:
+    """``questions`` (check -> text) default to RAW_PASS_QUESTIONS; hybrid.py passes the rules'."""
+    q = RAW_PASS_QUESTIONS if questions is None else questions
+    checks = "\n".join(f"- {cid}: {q[cid]}" for cid in rules.checks)
     return (
         "You are screening a first-person walkthrough video of a route for wheelchair users. "
         "Report likely barriers only, in plain words; this is not a compliance determination.\n\n"

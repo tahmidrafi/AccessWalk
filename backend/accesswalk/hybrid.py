@@ -108,7 +108,9 @@ def pixel_box(box, w: int, h: int):
 def proposer_prompt(rules: Rules, meta: IngestMeta) -> str:
     from .baseline import build_prompt
 
-    return build_prompt(rules, meta.sam.width, meta.sam.height, round(meta.source.duration_s * 1000)) + (
+    questions = {cid: r.question for cid, r in rules.checks.items()}  # as v3 ran (rules v2)
+    duration_ms = round(meta.source.duration_s * 1000)
+    return build_prompt(rules, meta.sam.width, meta.sam.height, duration_ms, questions) + (
         f"\nThe video is sampled at {PROPOSER_FPS} frames per second: frame k is at "
         f"{1000 // PROPOSER_FPS}*k ms. Give frame_ms as time from the start."
     )
