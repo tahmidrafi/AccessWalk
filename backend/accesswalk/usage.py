@@ -11,6 +11,7 @@ for.
 """
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -33,21 +34,50 @@ class UsageRecord(BaseModel):
     extra: dict = Field(default_factory=dict)
 
 
+def _lock(f) -> None:
+    """Block until this process holds the lock file (several runs append at once:
+    unlocked, two records can interleave into one broken line)."""
+    if os.name == "nt":
+        import msvcrt
+
+        while True:
+            try:
+                msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+                return
+            except OSError:  # LK_LOCK gives up after ~10 s; keep waiting
+                continue
+    import fcntl
+
+    fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+
+
 def log_call(record: UsageRecord, path: str | Path = DEFAULT_USAGE_LOG) -> None:
-    """Append one usage record as a JSON line."""
+    """Append one usage record as a JSON line, under a cross-process lock."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open("a", encoding="utf-8") as f:
-        f.write(record.model_dump_json() + "\n")
+    line = (record.model_dump_json() + "\n").encode("utf-8")
+    with (p.parent / f".{p.name}.lock").open("a+b") as lock:
+        lock.seek(0)
+        _lock(lock)
+        with p.open("ab") as f:
+            f.write(line)
+    # closing the lock file releases the lock
 
 
 def read_log(path: str | Path = DEFAULT_USAGE_LOG) -> list[UsageRecord]:
-    """Read back all usage records (for eval/reporting; small file)."""
+    """Read back all usage records (for eval/reporting; small file). A broken line is
+    skipped, so it cannot stop every later spend check."""
     p = Path(path)
     if not p.exists():
         return []
-    lines = p.read_text(encoding="utf-8").splitlines()
-    return [UsageRecord.model_validate_json(line) for line in lines if line.strip()]
+    out = []
+    for line in p.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            try:
+                out.append(UsageRecord.model_validate_json(line))
+            except ValueError:
+                continue
+    return out
 
 
 def provider_spend(provider: str, path: str | Path = DEFAULT_USAGE_LOG) -> float:
