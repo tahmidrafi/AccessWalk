@@ -1,6 +1,7 @@
 import type { CSSProperties, RefObject } from 'react'
 import { SEVERITY_LABELS } from '../lib/labels'
 import { adjacentFinding, findingAnchor, findingsVtt, overlayShapes } from '../lib/report'
+import { TIER_TEXT, captionLabel, isTracked, tierOf } from '../lib/tier'
 import { formatClock } from '../lib/time'
 import { useVideoClock } from '../lib/useVideoClock'
 import type { Finding, Track, VideoInfo } from '../types/report'
@@ -20,9 +21,6 @@ interface Props {
   onUnavailable: () => void
 }
 
-function captionLabel(f: Finding): string {
-  return `${f.title} (${SEVERITY_LABELS[f.severity].toLowerCase()}${f.verify_manually ? ', verify manually' : ''})`
-}
 
 /**
  * Shapes over the video. Has its own clock at the video's frame rate, so boxes
@@ -44,7 +42,11 @@ function PlayerOverlay({
         mask ? (
           <Mask key={finding.finding_id} url={mask} width={video.width} height={video.height} />
         ) : (
-          <Box key={finding.finding_id} b={bbox} kind="cited" />
+          <Box
+            key={finding.finding_id}
+            b={bbox}
+            kind={isTracked(tracks.get(finding.track_id)) ? 'cited' : 'possible'}
+          />
         ),
       )}
       {shapes.map(({ finding, bbox, n }) => (
@@ -131,7 +133,9 @@ export function RoutePlayer({
                   >
                     {numberOf.get(f.finding_id)}. {f.title}
                   </a>{' '}
-                  <span className="muted">({SEVERITY_LABELS[f.severity].toLowerCase()})</span>
+                  <span className="muted">
+                    ({TIER_TEXT[tierOf(f)].short}, {SEVERITY_LABELS[f.severity].toLowerCase()})
+                  </span>
                 </li>
               ))}
             </ul>

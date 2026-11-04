@@ -1,8 +1,9 @@
 import { useId } from 'react'
 import type { BBox } from '../types/report'
 
-/** A box in sam.mp4 pixels. Two strokes (dark under light) so it reads on any background. */
-export function Box({ b, kind }: { b: BBox; kind: 'cited' | 'related' }) {
+/** A box in sam.mp4 pixels. Two strokes (dark under light) so it reads on any background.
+ * ``possible``: dashed, for a raw-video finding's approximate area (no SAM track). */
+export function Box({ b, kind }: { b: BBox; kind: 'cited' | 'related' | 'possible' }) {
   const props = { x: b.x1, y: b.y1, width: b.x2 - b.x1, height: b.y2 - b.y1 }
   return (
     <g className={`box box-${kind}`}>

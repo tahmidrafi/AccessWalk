@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { SEVERITY_LABELS } from '../lib/labels'
 import { findingAnchor, timelineRows } from '../lib/report'
+import { TIER_TEXT, isPossible, tierOf } from '../lib/tier'
 import { formatClock, spokenTime } from '../lib/time'
 import type { Finding } from '../types/report'
 
@@ -53,9 +54,9 @@ export function Timeline({ findings, durationMs, numberOf, selectedId, inViewIds
                 >
                   <a
                     href={`#${findingAnchor(f)}`}
-                    className={`mark sev-${f.severity}${f.verify_manually ? ' mark-verify' : ''}${inViewIds.has(f.finding_id) ? ' mark-inview' : ''}`}
+                    className={`mark sev-${f.severity} tier-${tierOf(f)}${f.verify_manually && !isPossible(f) ? ' mark-verify' : ''}${inViewIds.has(f.finding_id) ? ' mark-inview' : ''}`}
                     aria-current={selected ? 'true' : undefined}
-                    aria-label={`Finding ${n} at ${spokenTime(f.frame_ms)}: ${f.title}. ${SEVERITY_LABELS[f.severity]}${f.verify_manually ? ', verify manually' : ''}.`}
+                    aria-label={`Finding ${n} at ${spokenTime(f.frame_ms)}: ${f.title}. ${TIER_TEXT[tierOf(f)].badge}, ${SEVERITY_LABELS[f.severity].toLowerCase()}${f.verify_manually && !isPossible(f) ? ', verify manually' : isPossible(f) ? ', verify on site' : ''}.`}
                     onClick={(e) => {
                       e.preventDefault()
                       onGo(f)

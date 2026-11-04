@@ -14,6 +14,7 @@ import {
   snapToSamFrame,
   trackById,
 } from '../lib/report'
+import { findingsByTier, isPossible } from '../lib/tier'
 import { formatClock } from '../lib/time'
 import { useVideoClock } from '../lib/useVideoClock'
 import { usePageEntry } from '../lib/router'
@@ -36,7 +37,11 @@ function focusFinding(findingId: string, animate = true) {
 }
 
 export function ReportPage({ report }: { report: Report }) {
-  const findings = useMemo(() => findingsInRouteOrder(report), [report])
+  const routeOrder = useMemo(() => findingsInRouteOrder(report), [report])
+  // Numbered confirmed first, then possible: the cited findings read first everywhere.
+  const findings = useMemo(() => findingsByTier(routeOrder), [routeOrder])
+  const confirmed = findings.filter((f) => !isPossible(f))
+  const possible = findings.filter(isPossible)
   const tracks = useMemo(() => trackById(report), [report])
   const numberOf = useMemo(() => new Map(findings.map((f, i) => [f.finding_id, i + 1])), [findings])
   const frameMs = samFrameMs(report.video)
@@ -85,6 +90,21 @@ export function ReportPage({ report }: { report: Report }) {
     if (linkedId) focusFinding(linkedId, false)
   }, [linkedId])
 
+  const card = (f: Finding) => (
+    <li key={f.finding_id}>
+      <FindingCard
+        finding={f}
+        number={numberOf.get(f.finding_id) ?? 0}
+        video={report.video}
+        track={tracks.get(f.track_id)}
+        related={(f.related_track_ids ?? []).flatMap((id) => tracks.get(id) ?? [])}
+        selected={f.finding_id === selectedId}
+        inView={inViewIds.has(f.finding_id)}
+        onShowInVideo={videoOk ? () => seekTo(f, true) : undefined}
+      />
+    </li>
+  )
+
   return (
     <>
       <div className="report-title">
@@ -98,7 +118,7 @@ export function ReportPage({ report }: { report: Report }) {
         <PdfButton report={report} />
       </div>
 
-      <Verdict report={report} findings={findings} numberOf={numberOf} onGo={goTo} />
+      <Verdict report={report} findings={routeOrder} numberOf={numberOf} onGo={goTo} />
 
       {report.disclaimer && (
         <aside className="disclaimer" aria-label="About this report">
@@ -147,37 +167,41 @@ export function ReportPage({ report }: { report: Report }) {
         />
       </section>
 
-      <section aria-labelledby="findings-heading">
+      <section aria-labelledby="findings-heading" className="findings-section">
         <h2 id="findings-heading" tabIndex={-1}>
-          Findings <span className="count">({findings.length})</span>
+          Confirmed findings <span className="count">({confirmed.length})</span>
         </h2>
         <p className="section-intro">
           In the order you reach them along the route. Each one cites the tracked object and the video frame it
-          rests on.
+          rests on, and these alone set the route verdict.
         </p>
-        {findings.length === 0 ? (
-          <p>No likely barriers were found on this clip.</p>
+        {confirmed.length === 0 ? (
+          <p className="findings-empty">
+            {possible.length === 0
+              ? 'No likely barriers were found on this clip.'
+              : 'No barrier was confirmed from a tracked object on this clip.'}
+          </p>
         ) : (
-          <ol className="findings">
-            {findings.map((f) => (
-              <li key={f.finding_id}>
-                <FindingCard
-                  finding={f}
-                  number={numberOf.get(f.finding_id) ?? 0}
-                  video={report.video}
-                  track={tracks.get(f.track_id)}
-                  related={(f.related_track_ids ?? []).flatMap((id) => tracks.get(id) ?? [])}
-                  selected={f.finding_id === selectedId}
-                  inView={inViewIds.has(f.finding_id)}
-                  onShowInVideo={videoOk ? () => seekTo(f, true) : undefined}
-                />
-              </li>
-            ))}
-          </ol>
+          <ol className="findings">{confirmed.map(card)}</ol>
         )}
       </section>
 
-      <ChecksTable checks={report.checks} />
+      {possible.length > 0 && (
+        <section aria-labelledby="possible-heading" className="findings-section findings-possible">
+          <h2 id="possible-heading">
+            Possible findings: verify on site <span className="count">({possible.length})</span>
+          </h2>
+          <p className="section-intro">
+            Seen in the video by a second, raw-video pass (Muse Spark 1.3 watching the whole clip) but not confirmed
+            by a tracked object. Treat each as a lead to check in person; none of them changes the verdict.
+          </p>
+          <ol className="findings" start={confirmed.length + 1}>
+            {possible.map(card)}
+          </ol>
+        </section>
+      )}
+
+      <ChecksTable checks={report.checks} findings={findings} />
       <RunDetails report={report} />
     </>
   )

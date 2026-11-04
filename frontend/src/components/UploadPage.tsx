@@ -15,6 +15,8 @@ import {
 import { RATING_TEXT } from '../lib/labels'
 import { navigate, usePageEntry } from '../lib/router'
 import type { Health, JobError, ReportSummary } from '../types/api'
+import { HeroMedia } from './HeroMedia'
+import { HowItWorks } from './HowItWorks'
 import { Link } from './Link'
 
 interface Props {
@@ -135,44 +137,54 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
 
   return (
     <>
-      <div className="page-head">
-        <h1 ref={headingRef} tabIndex={-1}>
-          Check a route before you go
-        </h1>
-        <p className="lede">
-          Upload a phone video of the walk, from the bus stop or parking to the entrance. AccessWalk tracks what is
-          along the route and reports likely barriers for a wheelchair user, each with the frame it rests on.
-        </p>
-        {api.mock && (
-          <p className="notice">
-            <strong>Demo mode.</strong> Nothing is uploaded: the page checks the file on your device and then plays
-            out a shortened sample analysis.
+      <section className="hero" aria-labelledby="page-title">
+        <div className="hero-copy">
+          <p className="hero-eyebrow">For wheelchair users, before the trip</p>
+          <h1 id="page-title" ref={headingRef} tabIndex={-1}>
+            Check a route <span className="hero-mark">before you go</span>
+          </h1>
+          <p className="lede">
+            Film the walk from the bus stop or parking to the entrance. AccessWalk tracks every object along the route
+            and reports likely barriers for a wheelchair, each one shown on the frame it rests on.
           </p>
-        )}
-      </div>
 
-      {sampleReportId && (
-        <section aria-labelledby="sample-heading" className="sample">
-          <h2 id="sample-heading">No video to hand?</h2>
-          {sample ? (
-            <>
-              <Link to={reportPagePath(sample.report_url)} className="button" aria-describedby="sample-hint">
+          <div className="hero-actions">
+            {sample && (
+              <Link to={reportPagePath(sample.report_url)} className="button primary" aria-describedby="sample-hint">
                 Try a sample route
               </Link>
-              <p id="sample-hint" className="hint">
-                Opens a finished report straight away, with {sample.n_findings} likely{' '}
-                {sample.n_findings === 1 ? 'barrier' : 'barriers'}. Nothing is uploaded.
-              </p>
-            </>
-          ) : listFailed ? (
-            <p className="hint">The sample route could not be loaded. Reload the page to try again.</p>
-          ) : recent === null ? (
-            <p className="hint">Looking for a sample route…</p>
-          ) : (
-            <p className="hint">The sample route is not available right now.</p>
+            )}
+            <a href="#upload" className="button">
+              Upload a walkthrough
+            </a>
+          </div>
+          {sampleReportId && (
+            <p id="sample-hint" className="hint hero-hint">
+              {sample ? (
+                <>
+                  No video to hand? The sample opens a finished report straight away, with {sample.n_findings}{' '}
+                  {sample.n_findings === 1 ? 'finding' : 'findings'}. Nothing is uploaded.
+                </>
+              ) : listFailed ? (
+                <>No video to hand? The sample route could not be loaded. Reload the page to try again.</>
+              ) : recent === null ? (
+                <>No video to hand? Looking for a sample route…</>
+              ) : (
+                <>No video to hand? The sample route is not available right now.</>
+              )}
+            </p>
           )}
-        </section>
-      )}
+          {api.mock && (
+            <p className="notice">
+              <strong>Demo mode.</strong> Nothing is uploaded: the page checks the file on your device and then plays
+              out a shortened sample analysis.
+            </p>
+          )}
+        </div>
+        <HeroMedia />
+      </section>
+
+      <HowItWorks />
 
       {uploadError && (
         <div className="alert" role="alert" tabIndex={-1} ref={alertRef} aria-labelledby="upload-error-title">
@@ -187,7 +199,7 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
         </div>
       )}
 
-      <form className="upload" onSubmit={onSubmit} noValidate aria-labelledby="upload-heading">
+      <form id="upload" className="upload" onSubmit={onSubmit} noValidate aria-labelledby="upload-heading" tabIndex={-1}>
         <h2 id="upload-heading">Upload a walkthrough</h2>
 
         <div className={`field${fieldError ? ' field-invalid' : ''}`}>
@@ -324,7 +336,7 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
                 <Link to={reportPagePath(r.report_url)}>{r.title}</Link>
                 <span className="muted">
                   {' '}
-                  · {RATING_TEXT[r.rating].label} · {r.n_findings} likely {r.n_findings === 1 ? 'barrier' : 'barriers'}
+                  · {RATING_TEXT[r.rating].label} · {r.n_findings} {r.n_findings === 1 ? 'finding' : 'findings'}
                 </span>
               </li>
             ))}

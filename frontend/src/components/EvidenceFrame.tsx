@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { boxOnFrame } from '../lib/report'
+import { isTracked } from '../lib/tier'
 import { formatClock, formatSeconds } from '../lib/time'
 import type { Finding, Track, VideoInfo } from '../types/report'
 import { Box, Mask } from './Overlay'
@@ -19,13 +20,17 @@ interface Props {
  */
 export function EvidenceFrame({ finding, video, track, related }: Props) {
   const [failed, setFailed] = useState(!finding.frame_url)
-  const phrase = track?.phrase ?? 'object'
+  // A raw-video ("possible") finding usually has a pseudo-track, not a SAM object:
+  // its box is the model's approximate area, drawn dashed and described as such.
+  const tracked = isTracked(track)
+  const phrase = tracked ? track.phrase : track ? 'area the raw-video pass named' : 'object'
   const relatedHere = related
     .map((t) => ({ t, b: boxOnFrame(t, finding.frame_index) }))
     .filter((r): r is { t: Track; b: NonNullable<typeof r.b> } => r.b !== undefined)
   const relatedElsewhere = related.filter((t) => !relatedHere.some((r) => r.t === t))
-  const maskUrl = track?.mask_url && track.keyframe_index === finding.frame_index ? track.mask_url : null
-  const alt = `Video frame at ${formatClock(finding.frame_ms)} with the ${phrase} outlined. Faces and license plates are blurred.`
+  const maskUrl = tracked && track.mask_url && track.keyframe_index === finding.frame_index ? track.mask_url : null
+  const alt = `Video frame at ${formatClock(finding.frame_ms)} with the ${phrase} outlined${tracked || !track ? '' : ' (approximate)'}. Faces and license plates are blurred.`
+  const boxText = maskUrl ? 'Outlined and tinted' : tracked || !track ? 'Solid box' : 'Dashed box (approximate)'
 
   return (
     <figure className="evidence">
@@ -44,14 +49,13 @@ export function EvidenceFrame({ finding, video, track, related }: Props) {
           {maskUrl ? (
             <Mask url={maskUrl} width={video.width} height={video.height} />
           ) : (
-            <Box b={finding.bbox} kind="cited" />
+            <Box b={finding.bbox} kind={tracked || !track ? 'cited' : 'possible'} />
           )}
         </svg>
       </div>
       <figcaption>
-        Frame {finding.frame_index} at {formatSeconds(finding.frame_ms)}. {maskUrl ? 'Outlined and tinted' : 'Solid box'}:{' '}
-        {phrase}
-        {track && <> (track {track.track_id})</>}.
+        Frame {finding.frame_index} at {formatSeconds(finding.frame_ms)}. {boxText}: {phrase}
+        {tracked && <> (track {track.track_id})</>}.
         {relatedHere.length > 0 && <> Dashed: {relatedHere.map(({ t }) => t.phrase).join(', ')}.</>}
         {relatedElsewhere.map((t) => (
           <span key={t.track_id}>
