@@ -139,3 +139,30 @@ def test_eval_contract_exported_and_mock_valid():
     for s in mock.systems:
         assert sum(c.hits for c in s.per_clip) == s.overall.hits == sum(c.hits for c in s.per_check)
         assert sum(c.false_positives for c in s.per_clip) == s.overall.false_positives
+
+
+def test_merged_width_scores_a_narrow_finding_on_an_obstruction_barrier():
+    from accesswalk.schemas import Report
+    from accesswalk.scoring import merge_width_annotation, merge_width_report
+
+    ann = _ann(barriers=[_barrier("sidewalk_obstruction", 10, 12)], not_applicable=["narrow_passage"])
+    strict = score_clip(ann, _report(("narrow_passage", 11000)))
+    assert strict["narrow_passage"].false_positives == 1 and strict["sidewalk_obstruction"].misses == 1
+    merged = merge_width_annotation(ann)
+    assert merged.not_applicable == [] and ann.not_applicable == ["narrow_passage"]  # copy, not edit
+    real = Report.model_validate_json((REPO_ROOT / "frontend" / "src" / "mock" / "report.json").read_text())
+    narrow = real.findings[0].model_copy(update={"check_id": "narrow_passage"})
+    real = real.model_copy(update={"findings": [narrow]})
+    assert {f.check_id for f in merge_width_report(real).findings} == {"sidewalk_obstruction"}
+    c = score_clip(merged, _report(("sidewalk_obstruction", 11000)))
+    assert (c["sidewalk_obstruction"].hits, c["narrow_passage"].false_positives) == (1, 0)
+
+
+def test_merged_width_keeps_not_applicable_only_when_both_were():
+    from accesswalk.scoring import merge_width_annotation
+
+    both = _ann(not_applicable=["sidewalk_obstruction", "narrow_passage", "round_doorknob"])
+    assert merge_width_annotation(both).not_applicable == ["sidewalk_obstruction", "round_doorknob"]
+    one = _ann(not_applicable=["sidewalk_obstruction"], barriers=[_barrier("narrow_passage", 1, 2)])
+    m = merge_width_annotation(one)
+    assert m.not_applicable == [] and m.barriers[0].check == "sidewalk_obstruction"

@@ -98,6 +98,30 @@ def score_system(
     )
 
 
+WIDTH_CHECKS = ("sidewalk_obstruction", "narrow_passage")  # one "width" check when merged
+
+
+def merge_width_annotation(ann: ClipAnnotation) -> ClipAnnotation:
+    """``ann`` with narrow_passage read as sidewalk_obstruction: whether a car or pole
+    'blocks' or 'narrows' the walk is a judgement call, and this score ignores it. The
+    merged check is not applicable only where both were."""
+    keep, into = WIDTH_CHECKS
+    na = [c for c in ann.not_applicable if c != into]
+    if keep in na and into not in ann.not_applicable:
+        na.remove(keep)
+    return ann.model_copy(update={
+        "barriers": [b.model_copy(update={"check": keep}) if b.check == into else b for b in ann.barriers],
+        "not_applicable": na,
+    })
+
+
+def merge_width_report(report: Report) -> Report:
+    keep, into = WIDTH_CHECKS
+    return report.model_copy(update={"findings": [
+        f.model_copy(update={"check_id": keep}) if f.check_id == into else f for f in report.findings
+    ]})
+
+
 def load_reports(run_dir: str | Path) -> dict[str, Report]:
     """Reports of one run, keyed by clip stem (the file name). ``_``-prefixed files are stats."""
     return {

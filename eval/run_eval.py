@@ -2,6 +2,11 @@
 
   micromamba run -n accesswalk python eval/run_eval.py --agent v1 [--baseline baseline-v1]
   micromamba run -n accesswalk python eval/run_eval.py --agent v1 --synthetic
+  ... --system agent:v2+v2-heldout --system baseline:baseline-v1 --clips PXL_20261027_,PXL_20261028_
+  ... --merge-width     # obstruction and narrow passage scored as one "width" check
+
+--system KIND:RUN[+RUN...] scores the union of several frozen runs (one per clip set) as one
+system; --clips keeps only annotations whose clip name starts with one of the prefixes.
 
 Reads data/out/eval_runs/<run>/, writes data/out/eval/<agent run>.json (git-ignored) and
 prints the counts only, never a finding. With no done annotations it says so and scores nothing.
@@ -19,7 +24,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 from accesswalk.annotations import ClipAnnotation, load_all  # noqa: E402
-from accesswalk.scoring import evaluate, load_reports  # noqa: E402
+from accesswalk.scoring import (  # noqa: E402
+    evaluate,
+    load_reports,
+    merge_width_annotation,
+    merge_width_report,
+)
 
 RUNS = REPO_ROOT / "data" / "out" / "eval_runs"
 OUT = REPO_ROOT / "data" / "out" / "eval"
@@ -120,24 +130,48 @@ def synthetic() -> int:
     return 0 if ok else 1
 
 
+def _load_runs(spec: str) -> dict:
+    """Reports of ``run1+run2+...``; a clip in two runs is an error, not a silent pick."""
+    out: dict = {}
+    for run in spec.split("+"):
+        reports = load_reports(RUNS / run)
+        twice = out.keys() & reports.keys()
+        if twice:
+            raise SystemExit(f"{run}: clips already in an earlier run of {spec}: {sorted(twice)}")
+        out.update(reports)
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--agent", default="v1")
     ap.add_argument("--baseline")
+    ap.add_argument("--system", action="append", help="KIND:RUN[+RUN...]; replaces --agent/--baseline")
+    ap.add_argument("--clips", help="comma-separated clip-name prefixes to score")
+    ap.add_argument("--merge-width", action="store_true")
+    ap.add_argument("--out", help="results file name in data/out/eval/ (default: <agent run>.json)")
     ap.add_argument("--synthetic", action="store_true")
     a = ap.parse_args()
     if a.synthetic:
         return synthetic()
     annotations = load_all()
-    systems = [("agent", a.agent, load_reports(RUNS / a.agent))]
-    if a.baseline:
-        systems.append(("baseline", a.baseline, load_reports(RUNS / a.baseline)))
-    results = evaluate(annotations, systems)
+    if a.clips:
+        prefixes = tuple(a.clips.split(","))
+        annotations = {c: ann for c, ann in annotations.items() if c.startswith(prefixes)}
+    specs = a.system or [f"agent:{a.agent}"] + ([f"baseline:{a.baseline}"] if a.baseline else [])
+    systems = []
+    for spec in specs:
+        kind, run = spec.split(":", 1)
+        systems.append((kind, run, _load_runs(run)))
+    if a.merge_width:
+        annotations = {c: merge_width_annotation(ann) for c, ann in annotations.items()}
+        systems = [(k, r, {c: merge_width_report(rep) for c, rep in reps.items()}) for k, r, reps in systems]
+    results = evaluate(annotations, systems, note="merged width" if a.merge_width else None)
     show(results)
     if not annotations:
         print("\nno done annotations yet: nothing scored")
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / f"{a.agent}.json").write_text(
+    (OUT / (a.out or f"{a.agent}.json")).write_text(
         json.dumps(results.model_dump(mode="json"), indent=2), encoding="utf-8"
     )
     return 0
