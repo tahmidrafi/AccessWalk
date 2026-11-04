@@ -5,6 +5,9 @@ data/out/agent_batch.json; reports to data/out/reports/<clip>.json.
   micromamba run -n accesswalk python scripts/run_agent_batch.py --per-clip 0.5 --total 5
   ... --out data/out/reports_v2 --clip PXL_...   # an eval run: keeps data/out/reports
                                                  # (the pinned sample report) untouched
+  ... --proposer open          # hybrid: Muse Spark Open on Baseten proposes from the video;
+                               # its own findings go to <out>_proposer/ for scoring
+  ... --proposer run:baseline-v1   # hybrid with a frozen run's findings as proposals ($0 extra)
 
 Spend is read back from usage.jsonl, so it includes the agent's SAM rechecks, which
 run_agent's own budget does not see; RECHECK_MARGIN keeps a clip under its cap anyway.
@@ -22,7 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 load_dotenv(REPO_ROOT / ".env")
 
-from accesswalk import agent, usage  # noqa: E402
+from accesswalk import agent, hybrid, usage  # noqa: E402
 
 RAW_DIR = REPO_ROOT / "data" / "raw"
 OUT_DIR = REPO_ROOT / "data" / "out" / "reports"
@@ -44,13 +47,35 @@ def _rejection_kind(reason: str) -> str:
     return " ".join(reason.split()[:4]).split("'")[0].strip()
 
 
-def run_clip(stem: str, cap: float, out_dir: Path = OUT_DIR) -> dict:
+EVAL_RUNS = REPO_ROOT / "data" / "out" / "eval_runs"
+
+
+def _propose(ctx, proposer: str, out_dir: Path) -> None:
+    """Hybrid runs: give ``ctx`` its proposals before the agent starts."""
+    if proposer == "open":
+        props, who, rep, _ = hybrid.propose_open(ctx.meta, ctx.rules)
+        pdir = out_dir.with_name(out_dir.name + "_proposer")
+        pdir.mkdir(parents=True, exist_ok=True)
+        (pdir / f"{ctx.meta.source.filename.rsplit('.', 1)[0]}.json").write_text(
+            rep.model_dump_json(indent=2), encoding="utf-8")
+    else:
+        run = proposer.removeprefix("run:")
+        stem = ctx.meta.source.filename.rsplit('.', 1)[0]
+        rep = agent.Report.model_validate_json(
+            (EVAL_RUNS / run / f"{stem}.json").read_text(encoding="utf-8"))
+        props, who = hybrid.proposals_from_report(rep, ctx.meta), hybrid.proposer_of(rep, f"frozen run {run}")
+    ctx.proposals, ctx.proposer = props, who
+
+
+def run_clip(stem: str, cap: float, out_dir: Path = OUT_DIR, proposer: str | None = None) -> dict:
     path = Path(usage.DEFAULT_USAGE_LOG)
     offset = path.stat().st_size if path.exists() else 0
     start = time.time()
     row: dict = {"clip": stem, "error": None}
     try:
         ctx = agent.load_context(stem)
+        if proposer:
+            _propose(ctx, proposer, out_dir)
         res = agent.run_agent(ctx, allow_closed=False, max_cost_usd=max(0.0, cap - RECHECK_MARGIN))
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / f"{stem}.json").write_text(res.report.model_dump_json(indent=2), encoding="utf-8")
@@ -62,7 +87,8 @@ def run_clip(stem: str, cap: float, out_dir: Path = OUT_DIR) -> dict:
                    budget_stop=res.stopped_for_budget, hosts=res.providers,
                    models=sorted(set(res.models_served)), closed=res.report.run.used_closed_fallback,
                    rejections=len(res.rejections), rejection_kinds=kinds, tools=res.tool_counts,
-                   views=ctx.views, rechecks=ctx.rechecks)
+                   views=ctx.views, rechecks=ctx.rechecks, proposals=len(ctx.proposals),
+                   verdicts=[v["verdict"] for v in ctx.proposal_verdicts.values()])
     except Exception as e:  # one clip must not stop the batch
         row["error"] = f"{type(e).__name__}: {str(e)[:300]}"
     calls, _ = _usage_since(offset)
@@ -81,6 +107,7 @@ def main() -> int:
     ap.add_argument("--clip", action="append", help="raw clip stem; default: all of data/raw")
     ap.add_argument("--out", type=Path, default=OUT_DIR, help="report directory")
     ap.add_argument("--stats", type=Path, default=STATS)
+    ap.add_argument("--proposer", help="open | run:<frozen run>: hybrid proposals (default: none)")
     args = ap.parse_args()
     stems = args.clip or sorted(p.stem for p in RAW_DIR.glob("*.mp4"))
     rows, spent = [], 0.0
@@ -90,7 +117,7 @@ def main() -> int:
             rows.append({"clip": stem, "error": "not run: total budget reached", "cost_usd": 0.0})
             print(f"{stem}: NOT RUN, ${spent:.4f} of ${args.total} spent", flush=True)
             continue
-        row = run_clip(stem, min(args.per_clip, left), args.out)
+        row = run_clip(stem, min(args.per_clip, left), args.out, args.proposer)
         spent += row["cost_usd"]
         rows.append(row)
         args.stats.write_text(json.dumps({"spent_usd": round(spent, 4), "clips": rows}, indent=2),
@@ -100,6 +127,7 @@ def main() -> int:
               f"(recheck ${row['recheck_usd']:.4f}) hosts {hosts} rejections {row.get('rejections')} "
               f"{row.get('rejection_kinds') or ''} turn_cap {row.get('turn_cap')} "
               f"budget_stop {row.get('budget_stop')} failovers {len(row['failovers'])} "
+              f"proposals {row.get('proposals')} {row.get('verdicts') or ''} "
               f"{row['seconds']} s error {row['error']} | running ${spent:.4f}", flush=True)
     print(f"TOTAL ${spent:.4f} | Baseten to date ${usage.provider_spend('baseten'):.4f}")
     return 0

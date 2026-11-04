@@ -9,6 +9,10 @@ clip's tracks, then works with tools:
   cite_finding(...)                           validator.py: a Finding, or a fixable reason
   finish(not_applicable, summary)             ends the run
 
+Hybrid runs (hybrid.py) add a user message listing a video-level model's candidate
+barriers, and ``finish`` then also takes a verdict per candidate (HYBRID_TOOLS).
+Without proposals the messages and tools are exactly as before, so cached runs replay.
+
 Several tool calls per turn are allowed and executed in order. Tool messages
 carry text only, so the images from a turn's view_frame calls follow the tool
 results as one user message. Caps: MAX_TURNS
@@ -42,7 +46,7 @@ from .inventory import (
 from .phrases import PLATE_PHRASE, SAM_PHRASES
 from .rules import Rules, load_rules
 from .sam_parse import SamRecord, parse_output
-from .schemas import CheckSummary, Finding, Report, RunInfo, Track, VideoInfo
+from .schemas import CheckSummary, Finding, ProposalReview, Report, RunInfo, Track, VideoInfo
 from .validator import Rejection, finalize, validate_citation
 from .verdict import route_verdict
 
@@ -103,6 +107,20 @@ TOOLS = [
         ["not_applicable", "summary"]),
 ]
 
+# finish with a verdict per proposal: only sent on hybrid runs
+HYBRID_TOOLS = TOOLS[:-1] + [
+    _fn("finish", "End the review. List checks that cannot occur on this clip, summarize the route, and "
+        "give a verdict for every candidate barrier you were given.",
+        {"not_applicable": {"type": "array", "items": {"type": "string", "enum": CHECK_ENUM}},
+         "summary": {"type": "string"},
+         "proposals": {"type": "array", "items": {"type": "object", "properties": {
+             "n": {"type": "integer"},
+             "verdict": {"type": "string", "enum": ["cited", "rejected"]},
+             "reason": {"type": "string", "description": "what the tracks and frames showed"}},
+             "required": ["n", "verdict", "reason"]}}},
+        ["not_applicable", "summary", "proposals"]),
+]
+
 
 # --------------------------------------------------------------------------- #
 # context
@@ -125,6 +143,10 @@ class AgentContext:
     summary: str = ""
     recheck_fn: object = None  # (ctx, phrase, start_ms, end_ms) -> list[SamRecord]
     frame_loader: object = None  # (ctx, frame_index) -> BGR image; default _frame_image
+    proposals: list = field(default_factory=list)  # hybrid.Proposal; empty = classic run
+    proposer: object = None  # hybrid.Proposer
+    proposal_verdicts: dict[int, dict] = field(default_factory=dict)  # n -> {verdict, reason}
+    finish_retried: bool = False
 
 
 def load_context(clip_stem: str, out_root: Path = DEFAULT_OUT_ROOT,
@@ -280,7 +302,17 @@ def tool_cite(ctx: AgentContext, args: dict) -> dict:
     return {"ok": True, "cited": len(ctx.findings)}
 
 
-def tool_finish(ctx: AgentContext, not_applicable: list, summary: str) -> dict:
+def tool_finish(ctx: AgentContext, not_applicable: list, summary: str,
+                proposals: list | None = None) -> dict:
+    if ctx.proposals:
+        known = {p.n for p in ctx.proposals}
+        for v in proposals or []:
+            if isinstance(v, dict) and v.get("n") in known and v.get("verdict") in ("cited", "rejected"):
+                ctx.proposal_verdicts[v["n"]] = {"verdict": v["verdict"], "reason": str(v.get("reason", ""))}
+        missing = sorted(known - ctx.proposal_verdicts.keys())
+        if missing and not ctx.finish_retried:
+            ctx.finish_retried = True  # one reminder, then finish anyway (left "unreviewed")
+            return {"ok": False, "reason": f"give a verdict for candidates {missing}, then call finish again"}
     ctx.not_applicable = [c for c in not_applicable if c in ctx.rules.checks]
     ctx.summary = summary
     ctx.finished = True
@@ -346,7 +378,8 @@ def dispatch(ctx: AgentContext, name: str, arguments: str) -> dict:
         if name == "cite_finding":
             return tool_cite(ctx, args)
         if name == "finish":
-            return tool_finish(ctx, args.get("not_applicable", []), args.get("summary", ""))
+            return tool_finish(ctx, args.get("not_applicable", []), args.get("summary", ""),
+                               args.get("proposals"))
     except KeyError as e:
         return {"error": f"missing argument {e}"}
     return {"error": f"unknown tool {name!r}"}
@@ -455,6 +488,12 @@ def run_agent(ctx: AgentContext, *, allow_closed: bool = False, chat_fn=llm.chat
         {"role": "system", "content": system_prompt(ctx.rules)},
         {"role": "user", "content": inventory_prompt(ctx)},
     ]
+    tools = TOOLS
+    if ctx.proposer is not None:  # hybrid run, even with zero proposals
+        from .hybrid import proposals_prompt
+
+        messages.append({"role": "user", "content": proposals_prompt(ctx.proposals)})
+        tools = HYBRID_TOOLS if ctx.proposals else TOOLS
     providers: list[str] = []
     served: list[str] = []
     cost = 0.0
@@ -467,7 +506,7 @@ def run_agent(ctx: AgentContext, *, allow_closed: bool = False, chat_fn=llm.chat
         if max_cost_usd is not None and cost + last_cost > max_cost_usd:
             budget_stop, turns = True, turns - 1
             break
-        res = chat_fn(window_images(messages), video_sha256=ctx.meta.video_sha256, tools=TOOLS, params=PARAMS,
+        res = chat_fn(window_images(messages), video_sha256=ctx.meta.video_sha256, tools=tools, params=PARAMS,
                       allow_closed=allow_closed)
         providers.append(res.provider)
         served.append(res.model_served or "")
@@ -520,6 +559,15 @@ def build_report(ctx: AgentContext, findings: list[Finding], providers: list[str
     ]
     used_closed = llm.CLOSED_PROVIDER in providers
     hosts = list(dict.fromkeys(providers)) or ["none"]
+    reviews = []
+    for p in ctx.proposals:
+        v = ctx.proposal_verdicts.get(p.n, {"verdict": "unreviewed", "reason": ""})
+        # a "cited" verdict names the findings near the candidate's time (any check)
+        near = [f.finding_id for f in findings if abs(f.frame_ms - p.frame_ms) <= 5000]
+        reviews.append(ProposalReview(n=p.n, check_id=p.check_id, frame_ms=p.frame_ms, title=p.title,
+                                      verdict=v["verdict"], reason=v["reason"],
+                                      finding_ids=near if v["verdict"] == "cited" else []))
+    pr = ctx.proposer
     return Report(
         report_id=f"{m.video_sha256[:12]}-{datetime.now(UTC).strftime('%Y%m%dT%H%M%S')}",
         title=m.source.filename.rsplit(".", 1)[0],
@@ -534,7 +582,10 @@ def build_report(ctx: AgentContext, findings: list[Finding], providers: list[str
                     agent_model="+".join(dict.fromkeys(s for s in served if s)) or "unknown",
                     sam_model="sam-3.1", n_model_calls=n_calls, cost_usd=round(cost, 4),
                     created_at=datetime.now(UTC).isoformat(timespec="seconds"),
-                    used_closed_fallback=used_closed),
+                    used_closed_fallback=used_closed,
+                    proposer_provider=pr.provider if pr else None, proposer_model=pr.model if pr else None,
+                    proposer_open_weight=pr.open_weight if pr else None),
+        proposals=reviews,
     )
 
 

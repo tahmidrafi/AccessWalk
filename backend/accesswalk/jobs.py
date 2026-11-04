@@ -148,7 +148,16 @@ def real_pipeline(raw: Path, update: Callable[..., None], out_root: Path = DEFAU
 
     update(stage="review", progress=0.7, message="Agent reviewing tracked objects")
     ctx = load_context(raw.stem, out_root, raw_path=raw)
-    result = run_agent(ctx, allow_closed=False, max_cost_usd=AGENT_BUDGET_USD)
+    budget = AGENT_BUDGET_USD
+    if os.getenv("ACCESSWALK_HYBRID") == "open":  # hybrid-proposals; off by default (demo cache)
+        from .hybrid import propose_open
+
+        try:
+            ctx.proposals, ctx.proposer, _, cost = propose_open(ctx.meta, ctx.rules, out_root)
+            budget = max(0.0, budget - cost)
+        except Exception:  # no proposals is the classic run, not a failed job
+            ctx.proposals, ctx.proposer = [], None
+    result = run_agent(ctx, allow_closed=False, max_cost_usd=budget)
     update(stage="report", progress=0.98, message="Writing the report",
            cost_usd=round(spent + result.cost_usd, 4))
     return result.report
