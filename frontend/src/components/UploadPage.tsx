@@ -12,7 +12,7 @@ import {
   uploadErrorHelp,
   validateVideo,
 } from '../lib/jobs'
-import { RATING_TEXT } from '../lib/labels'
+import { RATING_TEXT, reviewAgentLabel } from '../lib/labels'
 import { navigate, usePageEntry } from '../lib/router'
 import type { Health, JobError, ReportSummary } from '../types/api'
 import { HeroMedia } from './HeroMedia'
@@ -346,7 +346,7 @@ export function UploadPage({ api, sampleReportId = import.meta.env.VITE_SAMPLE_R
 
       {health && (
         <p className="provenance muted">
-          Analysis runs on {health.agent_model} via {health.agent_provider} (open-weight review agent) and{' '}
+          Analysis runs on {health.agent_model} via {health.agent_provider} ({reviewAgentLabel(health.agent_provider)}) and{' '}
           {health.sam_model} (object tracking).
         </p>
       )}

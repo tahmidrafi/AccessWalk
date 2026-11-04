@@ -1,7 +1,7 @@
 import { formatSeconds } from '../lib/time'
 import type { Report } from '../types/report'
 
-/** Provenance: which models produced this report (shown for open-weight checks). */
+/** Provenance: which models and hosts produced this report. */
 export function RunDetails({ report }: { report: Report }) {
   const { run, video } = report
   const created = new Date(run.created_at)

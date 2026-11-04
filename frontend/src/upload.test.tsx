@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createMockClient } from './api/mockClient'
 import { PasscodeField, UploadPage } from './components/UploadPage'
 import { ERROR_HELP, expectedProcessingText, suggestsSample, uploadErrorHelp } from './lib/jobs'
+import { reviewAgentLabel } from './lib/labels'
 
 describe('upload page', () => {
   const html = renderToStaticMarkup(<UploadPage api={createMockClient()} />)
@@ -26,6 +27,14 @@ describe('upload page', () => {
 
   it('asks for no passcode until health says uploads need one', () => {
     expect(html).not.toContain('id="passcode"')
+  })
+})
+
+describe('review agent label', () => {
+  it('says open-weight only for the hosts that serve the open-weight model', () => {
+    expect(reviewAgentLabel('baseten')).toBe('open-weight review agent')
+    expect(reviewAgentLabel('fireworks')).toBe('open-weight review agent')
+    expect(reviewAgentLabel('meta')).toBe('review agent')
   })
 })
 
