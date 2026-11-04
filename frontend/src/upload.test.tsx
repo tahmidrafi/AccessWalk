@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { createMockClient } from './api/mockClient'
+import { ReportPreview, StatTiles } from './components/LandingSections'
 import { PasscodeField, UploadPage } from './components/UploadPage'
 import { ERROR_HELP, expectedProcessingText, suggestsSample, uploadErrorHelp } from './lib/jobs'
 import { reviewAgentLabel } from './lib/labels'
@@ -27,6 +28,40 @@ describe('upload page', () => {
 
   it('asks for no passcode until health says uploads need one', () => {
     expect(html).not.toContain('id="passcode"')
+  })
+})
+
+describe('landing', () => {
+  const html = renderToStaticMarkup(<UploadPage api={createMockClient()} />)
+
+  it('leads with the headline, its underlined word and both actions', () => {
+    expect(html).toContain('Accessibility, before you arrive')
+    expect(html).toContain('Know the route <span class="hero-mark">before</span> you go.')
+    expect(html).toContain('href="#upload"')
+    expect(html).toContain('id="upload"')
+  })
+
+  it('shows the eval numbers with their caveat', () => {
+    const stats = renderToStaticMarkup(<StatTiles />)
+    for (const t of ['79%', 'of labelled barriers found', '97%', 'precision on 22 filmed routes', '8', 'accessibility checks'])
+      expect(stats).toContain(t)
+    expect(stats).toContain('indicative')
+  })
+
+  it('previews one confirmed and one possible finding', () => {
+    const preview = renderToStaticMarkup(<ReportPreview sampleHref="/reports/x" />)
+    expect(preview).toContain('<strong>Confirmed:</strong> object and frame cited')
+    expect(preview).toContain('<strong>Possible:</strong> verify on site')
+    expect(preview).toContain('href="/reports/x"')
+    expect(renderToStaticMarkup(<ReportPreview />)).not.toContain('Open the full sample report')
+  })
+
+  it('keeps the sections in order: hero, stats, how it works, preview, upload', () => {
+    const at = ['page-title', 'stats-heading', 'how-heading', 'preview-heading', 'upload-heading'].map((id) =>
+      html.indexOf(`id="${id}"`),
+    )
+    expect(at.every((i) => i > -1)).toBe(true)
+    expect([...at].sort((a, b) => a - b)).toEqual(at)
   })
 })
 

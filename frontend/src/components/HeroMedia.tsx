@@ -105,6 +105,8 @@ export function HeroMedia({ src = HERO_VIDEO }: { src?: string }) {
     else v.pause()
   }
 
+  const showStill = state !== 'ready' || (reduce && !started)
+
   return (
     <figure className="hero-media">
       <div className="hero-screen">
@@ -129,7 +131,7 @@ export function HeroMedia({ src = HERO_VIDEO }: { src?: string }) {
             <track kind="captions" srcLang="en" label="Description" src={CAPTIONS} />
           </video>
         )}
-        {(state !== 'ready' || (reduce && !started)) && <HeroStill />}
+        {showStill && <HeroStill />}
       </div>
       <figcaption>
         {state === 'ready' && (
@@ -139,7 +141,9 @@ export function HeroMedia({ src = HERO_VIDEO }: { src?: string }) {
           </button>
         )}
         <span>
-          Solid box: an object SAM 3.1 tracked and the agent cited. Dashed box: a possible barrier to check on site.
+          {showStill
+            ? 'Solid box: an object SAM 3.1 tracked and the agent cited. Dashed box: a possible barrier to check on site.'
+            : 'SAM 3.1 tracking objects along a walk, faces blurred. No sound.'}
         </span>
       </figcaption>
     </figure>
