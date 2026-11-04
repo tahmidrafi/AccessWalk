@@ -1,16 +1,51 @@
 # AccessWalk
 
 **Know before you go.** Film the walk from the bus stop or parking spot to the entrance on a phone.
-AccessWalk turns that video into an accessibility report for wheelchair users: likely barriers along
-the route, each tied to a tracked object and the video frame it rests on.
+AccessWalk turns that video into an accessibility report for wheelchair users: the barriers along the
+route, each tied to an object SAM 3.1 tracked and the video frame it was seen in.
 
-It is a pre-trip and pre-audit screening tool. It does **not** certify ADA compliance and it is not
-real-time navigation. Every finding says "likely barrier" and asks you to verify on site; anything
-judged from depth, height or slope in a phone video is marked `verify_manually`.
+<!-- MEDIA SLOT 1 · hero GIF: walkthrough with the SAM tracking overlay · file: docs/media/hero.gif
+<p align="center"><img src="docs/media/hero.gif" alt="Walking a sidewalk; SAM 3.1 boxes and masks follow bins, barrels and stairs with stable ids" width="720"></p>
+-->
 
+**Live:** https://rafi-tahmid--accesswalk-web.us-east.modal.run (open "Try a sample route").
 Built solo for the Meta Global AI Developer Hackathon (indie track).
 
 ## What it does
+
+You upload a walkthrough. You get back a route verdict and a list of barriers: a bin on the sidewalk,
+a heaved slab, a flight of steps with no ramp or handrail. Each one shows the frame it was seen in, the
+tracked object, and a short note on why it matters.
+
+- **Confirmed** barriers are cited to a SAM track and a frame, and checked by a validator.
+- **Possible** barriers were seen in the video but not tied to a track; they are marked "check on site"
+  and never decide the verdict on their own.
+
+It checks 8 things: sidewalk obstruction · surface damage (heaved or broken slabs) · missing curb ramp ·
+sidewalk ends · steps without a ramp · missing handrail · round doorknob · narrow passage.
+
+It is a screening tool for planning a trip or an audit. It does not certify ADA compliance and it is
+not real-time navigation. Anything judged from depth, height or slope in a phone video is marked
+`verify_manually`.
+
+<!-- MEDIA SLOT 4 · two columns: what SAM tracks / what the report says (same moment) · files: docs/media/sam-tracks.png, docs/media/report-finding.png
+<table>
+  <tr>
+    <th width="50%">What SAM tracks</th>
+    <th width="50%">What the report says</th>
+  </tr>
+  <tr>
+    <td><img src="docs/media/sam-tracks.png" alt="One frame with the objects SAM 3.1 tracked, each with its id"></td>
+    <td><img src="docs/media/report-finding.png" alt="The report's finding for the same moment, with its cited frame and note"></td>
+  </tr>
+</table>
+-->
+
+## How it works
+
+<!-- MEDIA SLOT 2 · "how it works" pipeline image · file: docs/media/pipeline.png
+<p align="center"><img src="docs/media/pipeline.png" alt="Pipeline: local blur, SAM 3.1 tracking, inventory, two-tier review on Muse Spark 1.3, report" width="860"></p>
+-->
 
 1. **Upload** a 15 s to 2 min walkthrough (`.mp4`/`.mov` from a phone, held upright).
 2. **Privacy first, locally:** faces are detected and blurred on every source frame (OpenCV YuNet)
@@ -29,10 +64,18 @@ Built solo for the Meta Global AI Developer Hackathon (indie track).
 7. **Report:** a route verdict, findings with their cited frames and mask overlays, a timeline over
    the blurred video, and a PDF export.
 
-### The 8 checks
-Sidewalk obstruction · surface damage (heaved or broken slabs) · missing curb ramp · sidewalk ends ·
-steps without a ramp · missing handrail · round doorknob · narrow passage.
-Each check's recall and precision are in [Evaluation](#evaluation), weak ones included.
+## Results
+
+On 22 walkthrough clips with 28 labelled barriers, the two-tier review finds **79% of barriers (22/28)
+at 97% precision (31/32)**. Muse Spark 1.3 watching the same blurred video without tracking finds 64%
+at 95%. Tracking adds the barriers a single look misses; the video pass adds the ones SAM has no
+object for. The clips were filmed and labelled by the author, so the numbers are indicative.
+
+<!-- MEDIA SLOT 3 · results card · file: docs/media/results.png
+<p align="center"><img src="docs/media/results.png" alt="Two-tier review: 79% recall at 97% precision; Muse Spark 1.3 on raw video: 64% at 95%; 22 clips" width="720"></p>
+-->
+
+All 12 systems compared, per-check notes and the method are in [Evaluation](#evaluation).
 
 ## Architecture
 

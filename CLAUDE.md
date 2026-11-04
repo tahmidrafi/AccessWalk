@@ -20,11 +20,12 @@ navigation for blind users. Say "likely barrier" / "verify manually", never "vio
   **Use of Meta AI tooling 25%** (creative use beyond a basic integration) · **Technical depth 20%** ·
   **Demo 25%** (working demo that holds up + 3-min video). Stage 1 is pass/fail (theme fit + uses Meta AI).
   Top 5 per track demo **live** on Nov 9 → keep a cached sample route that always runs.
-- Bonus targets: **Best Agentic Use-Case** (judged on autonomy, effectiveness, usefulness);
-  **Best Build on Open-Weight Models** — the infra partner verifies the product runs on an eligible open-weight
-  model, so the shipped agent must run on Muse Spark Open via Baseten (Muse Spark 1.3 only as fallback), and
-  every model call logs which model served it. Also: Most Viral (X post, engagement through Nov 8) and
-  Community Vote (public gallery, winner Nov 16).
+- Bonus targets: **Best Agentic Use-Case** (judged on autonomy, effectiveness, usefulness), Most Viral
+  (X post, engagement through Nov 8) and Community Vote (public gallery, winner Nov 16).
+  **Best Build on Open-Weight Models is not targeted** (decided Nov 4): the shipped review runs on Muse Spark
+  1.3 because it scored best (README "Evaluation"). The open-weight agent (Muse Spark Open on Baseten,
+  Fireworks failover) still works with `ACCESSWALK_REVIEW=open`. Every model call still logs which model
+  served it.
 - Privacy: free Meta credits mean uploaded content may be used for product improvement. **Blur faces/plates
   before sending frames to any model where possible**, and never commit unblurred media.
   Pixel clips embed **GPS location** in metadata: strip it from every derived file (`-map_metadata -1`)
@@ -46,6 +47,7 @@ backend/accesswalk/   Python package: ingest, sam client, inventory, agent, tran
 frontend/             React (Vite) report UI — Session B, from Oct 29
 eval/                 eval harness: precision/recall per check, baseline comparison
 deploy/               Modal app (API + built UI on one URL); data via scripts/deploy_bundle.py
+docs/media/           README images/GIFs (committed; blurred footage only, never from data/raw/)
 data/annotations/     ground-truth JSON per clip (committed)
 data/raw/             source videos (git-ignored)
 data/cache/           cached model outputs keyed by video hash (git-ignored)
@@ -75,13 +77,19 @@ video ─► ingest (ffmpeg: re-encode to low fps for SAM, keyframes, 24 kHz mon
   ├─► Muse Voice Transcribe ─► location tags from narration ("bus stop", "approaching entrance")
   └─► SAM 3.1 video tracking, one noun phrase per request ─► tracks (object id, per-frame box+mask)
         ─► inventory: dedupe tracks, best keyframe per object, face blur
-              ─► verification agent (Muse Spark Open on Baseten; Muse Spark 1.3 as fallback)
-                   tools: get_track · view_frame · recheck_with_sam · cite_finding
-                   rules: YAML (check id, evidence required, reference, severity)
-                   output: JSON validated; findings without a valid track+frame citation are DROPPED
-              ─► route verdict ─► report (timeline, mask overlays, findings, PDF)
+              ─► two-tier review (review.py, DEFAULT_REVIEW = "two-tier"; frozen Nov 4)
+                   1. verification agent on Muse Spark 1.3 (agent CONFIGS["spark13"])
+                      tools: get_track · view_frame · recheck_with_sam · cite_finding
+                      rules: YAML (check id, evidence required, reference, severity)
+                      output: JSON validated; findings without a valid track+frame citation are DROPPED
+                      → tier "confirmed"
+                   2. video pass: Muse Spark 1.3 watches the blurred proxy.mp4 once (baseline.py, prompt pinned
+                      to RAW_PASS_QUESTIONS); findings the agent did not make → tier "possible", verify_manually
+              ─► route verdict (rated from confirmed findings only) ─► report (timeline, overlays, findings, PDF)
 eval: ground truth ─► precision/recall per check; baseline = Muse Spark 1.3 on the raw video, no tools
 ```
+- Other reviewers stay selectable for comparison only (`ACCESSWALK_REVIEW`): `open` (v2 agent on Muse Spark
+  Open), `spark13`, `hybrid-*`, `grounded-*`, `ensemble`. The pipeline is frozen: no new experiments.
 
 ### Ingest specifics (Pixel 8 Pro clips, verified Oct 28)
 - Source: HEVC 1920×1080 with rotation −90 (portrait), ~20 Mbps, 30 fps (low light ~24 fps), AAC stereo
@@ -142,13 +150,15 @@ Known limitation: when a finding rests on depth/height/slope judged from video a
   Turn-level timestamps only. $0.18/hour.
   ffmpeg: `ffmpeg -i in.mp4 -vn -ac 1 -ar 24000 -c:a pcm_s16le -map_metadata -1 out.wav`
 - **Muse Spark 1.3** (`muse-spark-1.3`): text/image/video/audio/PDF in, 1M context. $1.25 in / $4.25 out per 1M.
-  Use for the raw-video baseline and as agent fallback. Do NOT use `-contributor` variants.
+  **The shipped model**: the two-tier review's agent and its video pass, plus the raw-video baseline.
+  Meta chat completions serve it with tools, `image_url`, `video_url` data URLs and ≥100 images per request.
+  Do NOT use `-contributor` variants.
 - **Muse Spark Open on Baseten**: `https://inference.baseten.co/v1`, model `meta-models/muse-spark-open-1026`
   (hackathon ID — not `muse-spark-open`). Reasoning model: set generous `max_tokens`, otherwise
   `message.content` can come back `None`. Supports image input (check Baseten "Vision" docs).
 
 ## Other providers
-- **Fireworks**: failover host for the *same* open-weight agent model (keeps open-weight eligibility).
+- **Fireworks**: failover host for the *same* open-weight agent model; used only by `ACCESSWALK_REVIEW=open`.
   OpenAI-compatible, `https://api.fireworks.ai/inference/v1`, model `accounts/fireworks/models/muse-spark-open`
   (serverless; verified via `/models` Oct 28). $1.25/M in, $0.15/M cached, $4.25/M out. Don't use the
   "816B-A42B NVFP4" or Glimmer entries: those need a dedicated deployment billed per GPU hour.
