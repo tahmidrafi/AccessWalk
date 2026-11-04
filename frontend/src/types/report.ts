@@ -44,6 +44,7 @@ export type VerifyManually = boolean;
 export type Reference = string | null;
 export type RelatedTrackIds = string[];
 export type FrameUrl = string | null;
+export type Tier = "confirmed" | "possible";
 export type Findings = Finding[];
 export type TrackId1 = string;
 export type Phrase = string;
@@ -89,7 +90,18 @@ export type NModelCalls = number;
 export type CostUsd = number;
 export type CreatedAt = string;
 export type UsedClosedFallback = boolean;
+export type ProposerProvider = string | null;
+export type ProposerModel = string | null;
+export type ProposerOpenWeight = boolean | null;
 export type Disclaimer = string;
+export type N = number;
+export type CheckId2 = string;
+export type FrameMs3 = number;
+export type Title2 = string;
+export type Verdict = "cited" | "rejected" | "unreviewed";
+export type Reason = string;
+export type FindingIds = string[];
+export type Proposals = ProposalReview[];
 
 export interface Report {
   schema_version?: SchemaVersion;
@@ -103,6 +115,7 @@ export interface Report {
   location_tags?: LocationTags;
   run: RunInfo;
   disclaimer?: Disclaimer;
+  proposals?: Proposals;
   [k: string]: unknown;
 }
 /**
@@ -151,6 +164,7 @@ export interface Finding {
   reference?: Reference;
   related_track_ids?: RelatedTrackIds;
   frame_url?: FrameUrl;
+  tier?: Tier;
   [k: string]: unknown;
 }
 /**
@@ -246,5 +260,25 @@ export interface RunInfo {
   cost_usd?: CostUsd;
   created_at: CreatedAt;
   used_closed_fallback?: UsedClosedFallback;
+  proposer_provider?: ProposerProvider;
+  proposer_model?: ProposerModel;
+  proposer_open_weight?: ProposerOpenWeight;
+  [k: string]: unknown;
+}
+/**
+ * One candidate barrier from the video-level proposer and the agent's verdict on it.
+ * Never a finding by itself: only a cited finding (``finding_ids``) passed the validator.
+ *
+ * This interface was referenced by `Report`'s JSON-Schema
+ * via the `definition` "ProposalReview".
+ */
+export interface ProposalReview {
+  n: N;
+  check_id: CheckId2;
+  frame_ms: FrameMs3;
+  title: Title2;
+  verdict: Verdict;
+  reason?: Reason;
+  finding_ids?: FindingIds;
   [k: string]: unknown;
 }

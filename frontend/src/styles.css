@@ -259,9 +259,66 @@ main {
   font-size: 1.125rem;
   max-width: 45rem;
 }
+.verdict-none_confirmed {
+  border-color: var(--verify);
+  background: var(--verify-bg);
+}
+.verdict-none_confirmed .verdict-icon {
+  background: var(--verify);
+}
 .verdict-counts {
-  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.verdict-counts li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 0.35rem;
+  padding: 0.35rem 0.8rem;
+  background: var(--surface);
+  border: 2px solid var(--ok);
+  border-radius: var(--radius);
   font-weight: 600;
+}
+.verdict-counts strong {
+  font-size: 1.375rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.verdict-counts .count-detail {
+  font-weight: 400;
+  color: var(--muted);
+}
+.verdict-counts .count-possible {
+  border-style: dashed;
+  border-color: var(--verify);
+  font-weight: 400;
+}
+.verdict-possible {
+  margin-top: 0.9rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--surface);
+  border: 2px dashed var(--verify);
+  border-radius: var(--radius);
+}
+.verdict-possible h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  color: var(--verify);
+}
+.verdict-possible p {
+  margin: 0 0 0.25rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+.verdict-possible ul {
+  margin: 0;
+  padding-left: 1.25rem;
 }
 .verdict-key h3 {
   margin: 0.75rem 0 0.25rem;
@@ -417,6 +474,19 @@ main {
 .mark.sev-low {
   background: #2b4a6f;
 }
+.mark.tier-possible {
+  background: var(--surface);
+  border: 2px dashed currentColor;
+}
+.mark.tier-possible.sev-high {
+  color: var(--high);
+}
+.mark.tier-possible.sev-medium {
+  color: var(--medium);
+}
+.mark.tier-possible.sev-low {
+  color: var(--low);
+}
 .mark-verify {
   box-shadow:
     0 0 0 1px var(--border),
@@ -477,23 +547,44 @@ main {
   gap: 1.25rem;
 }
 
+.findings-empty {
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
 .finding {
   display: grid;
   gap: 1rem 1.5rem;
-  padding: 1rem 1.25rem 1.25rem;
+  padding: 1.25rem 1.25rem 1.25rem 1.5rem;
   background: var(--surface);
   border: 1px solid var(--rule);
   border-left: 0.5rem solid var(--border);
   border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
   scroll-margin-top: 1rem;
 }
-.finding.sev-high {
+/* Possible findings: quieter than confirmed ones (page background, dashed edge,
+   smaller type and frame). Never by colour alone: the badge and heading say so too. */
+.finding.tier-possible {
+  gap: 0.75rem 1.25rem;
+  padding: 1rem 1.1rem 1rem 1.25rem;
+  background: var(--bg);
+  border: 2px dashed var(--border);
+  border-left: 0.35rem dashed var(--verify);
+  box-shadow: none;
+}
+.findings-possible > h2 {
+  color: var(--verify);
+}
+.finding.tier-confirmed.sev-high {
   border-left-color: var(--high);
 }
-.finding.sev-medium {
+.finding.tier-confirmed.sev-medium {
   border-left-color: var(--medium);
 }
-.finding.sev-low {
+.finding.tier-confirmed.sev-low {
   border-left-color: var(--low);
 }
 .finding-selected {
@@ -515,6 +606,9 @@ main {
   .finding {
     grid-template-columns: minmax(0, 1fr) minmax(12rem, 17rem);
   }
+  .finding.tier-possible {
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, 12rem);
+  }
 }
 
 .finding-header h3 {
@@ -522,17 +616,31 @@ main {
   align-items: flex-start;
   gap: 0.6rem;
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.375rem;
+}
+.tier-possible .finding-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
 }
 .finding-number {
   display: inline-grid;
   place-items: center;
   flex: none;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   border: 2px solid var(--text);
   font-size: 1rem;
+  color: var(--surface);
+  background: var(--text);
+}
+.tier-possible .finding-number {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.9375rem;
+  color: var(--text);
+  background: transparent;
+  border-style: dashed;
 }
 
 .finding-flags {
@@ -573,6 +681,33 @@ main {
   color: var(--verify);
   background: var(--verify-bg);
 }
+.badge-tier.tier-confirmed {
+  color: var(--ok);
+  background: var(--ok-bg);
+  border-width: 2px;
+}
+.badge-tier.tier-possible {
+  color: var(--verify);
+  background: var(--surface);
+  border: 2px dashed var(--verify);
+  font-weight: 400;
+}
+.badge-tier strong {
+  font-weight: 700;
+}
+/* Shape as a second cue: confirmed = filled square (a cited box), possible = dashed square. */
+.tier-shape {
+  flex: none;
+  width: 0.75em;
+  height: 0.75em;
+  border: 2px solid currentColor;
+}
+.tier-confirmed .tier-shape {
+  background: currentColor;
+}
+.tier-possible .tier-shape {
+  border-style: dashed;
+}
 /* Shape as a second cue: high = triangle, medium = diamond, low = circle. */
 .sev-shape::before {
   font-size: 0.8em;
@@ -590,25 +725,69 @@ main {
 .finding-facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.75rem;
-  margin: 1rem 0 0;
+  gap: 0.1rem 1.5rem;
+  margin: 0.4rem 0 0;
+  padding-left: 2.6rem;
+}
+.finding-facts div {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
 }
 .finding-facts dt {
   font-size: 0.875rem;
   color: var(--muted);
 }
+.finding-facts dt::after {
+  content: ':';
+}
 .finding-facts dd {
   margin: 0;
   font-weight: 600;
 }
-
-.finding-seek {
-  margin-top: 1rem;
+.finding-flags {
+  padding-left: 2.6rem;
+}
+.tier-possible .finding-facts,
+.tier-possible .finding-flags {
+  padding-left: 2.35rem;
+}
+@media (max-width: 30rem) {
+  .finding .finding-facts,
+  .finding .finding-flags {
+    padding-left: 0;
+  }
 }
 
 .finding-evidence {
   margin: 1rem 0 0;
   max-width: 42rem;
+  font-size: 1.0625rem;
+}
+.tier-possible .finding-evidence {
+  font-size: 1rem;
+}
+.finding-tier-note {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.75rem;
+  max-width: 42rem;
+  border: 2px dashed var(--verify);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+.finding-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rule);
+}
+.finding-foot .finding-cite {
+  flex: 1 1 16rem;
+  margin: 0;
 }
 .finding-verify-note {
   margin: 0.75rem 0 0;
@@ -634,6 +813,9 @@ main {
   width: 100%;
   max-width: 17rem;
   justify-self: center;
+}
+.tier-possible .evidence {
+  max-width: 12rem;
 }
 .evidence-frame {
   position: relative;
@@ -679,6 +861,11 @@ main {
   stroke: var(--box-related);
   stroke-width: 3;
   stroke-dasharray: 8 6;
+}
+.box-possible .box-over {
+  stroke: var(--box-over);
+  stroke-width: 3;
+  stroke-dasharray: 12 8;
 }
 /* SAM mask: tinted fill with a dark-under-light outline (see Overlay.tsx). */
 .mask-under {
@@ -1059,6 +1246,160 @@ progress {
   font-size: 0.875rem;
 }
 
+/* Landing: hero with the showcase clip, then the three steps */
+
+.hero {
+  display: grid;
+  gap: 1.5rem 2.5rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 1.5rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-top: 0.4rem solid var(--link);
+  border-radius: var(--radius);
+}
+@media (min-width: 46rem) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    padding: 2.25rem 2.25rem 2rem;
+  }
+}
+.hero-eyebrow {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--now);
+}
+.hero h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(2.125rem, 6vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+/* The report's tracked-box look (dark under yellow) around the key words. */
+.hero-mark {
+  padding: 0 0.15em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  box-shadow:
+    inset 0 0 0 3px var(--box-over),
+    0 0 0 2px var(--box-under);
+}
+.hero .lede {
+  font-size: 1.1875rem;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.hero-actions .button {
+  min-height: 3rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 1.0625rem;
+}
+.hero-hint {
+  margin-top: 0.6rem;
+}
+.hero .notice {
+  margin: 1rem 0 0;
+}
+
+.hero-media {
+  margin: 0;
+  justify-self: center;
+  width: min(100%, 16rem);
+}
+.hero-screen {
+  position: relative;
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border: 0.5rem solid #1a1a1a;
+  border-radius: 1.5rem;
+  background: #000000;
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.25);
+}
+.hero-screen video,
+.hero-still {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hero-video-pending {
+  visibility: hidden;
+}
+.hero-media figcaption {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+.how h2 {
+  margin-bottom: 0.75rem;
+}
+.how-steps {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+@media (min-width: 46rem) {
+  .how-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.how-step {
+  position: relative;
+  padding: 1rem 1.1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+.how-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  fill: none;
+  stroke: var(--link);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.how-n {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--border);
+}
+.how-step h3 {
+  margin: 0.5rem 0 0.35rem;
+  font-size: 1.125rem;
+}
+.how-step p:last-child {
+  margin: 0;
+  color: var(--muted);
+}
+.upload:focus {
+  outline: none;
+}
+
 /* PDF export */
 
 .pdf-export {
@@ -1156,10 +1497,14 @@ progress {
   /* Severity colours, frame boxes and tints carry meaning: print them as shown. */
   .verdict,
   .verdict-icon,
+  .verdict-counts li,
+  .verdict-possible,
   .badge,
+  .tier-shape,
   .finding,
   .finding-number,
   .finding-verify-note,
+  .finding-tier-note,
   .evidence-frame,
   .evidence-missing {
     print-color-adjust: exact;
@@ -1194,6 +1539,21 @@ progress {
   }
   .evidence {
     max-width: 14rem;
+  }
+  .finding.tier-possible {
+    grid-template-columns: minmax(0, 1fr) 10rem;
+    border-width: 1px 1px 1px 0.3rem;
+  }
+  .tier-possible .evidence {
+    max-width: 10rem;
+  }
+  .finding {
+    box-shadow: none;
+  }
+  /* No number circle on paper (see above): nothing to indent past. */
+  .finding .finding-facts,
+  .finding .finding-flags {
+    padding-left: 0;
   }
   .findings {
     gap: 0.9rem;

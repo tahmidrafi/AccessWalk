@@ -11,6 +11,8 @@ import { defineConfig, loadEnv, type Plugin } from 'vite'
 // Set ACCESSWALK_MEDIA_DIR (env or frontend/.env.local) when the cache is not next
 // to this checkout, e.g. in a git worktree.
 const MEDIA_PATH = /^\/([0-9a-f]{64})\/((?:[\w-]+\/)*[\w-]+\.(?:jpg|png)|proxy\.mp4)$/
+// Landing-page showcase media (the hero clip), same rule as the API's /media/showcase/<name>.
+const SHOWCASE_PATH = /^\/(showcase)\/([a-z0-9-]{1,40}\.(?:mp4|jpg|png))$/
 const TYPES: Record<string, string> = { '.jpg': 'image/jpeg', '.png': 'image/png', '.mp4': 'video/mp4' }
 
 function devMedia(mediaRoot: string): Plugin {
@@ -18,10 +20,12 @@ function devMedia(mediaRoot: string): Plugin {
     name: 'accesswalk-dev-media',
     apply: 'serve',
     configureServer(server) {
-      server.middlewares.use('/media', (req, res) => {
-        const m = MEDIA_PATH.exec((req.url ?? '').split('?')[0])
-        const file = m && path.join(mediaRoot, m[1], m[2])
-        if (!file || !fs.existsSync(file)) {
+      server.middlewares.use('/media', (req, res, next) => {
+        const url = (req.url ?? '').split('?')[0]
+        const m = MEDIA_PATH.exec(url) ?? SHOWCASE_PATH.exec(url)
+        if (!m) return next()
+        const file = path.join(mediaRoot, m[1], m[2])
+        if (!fs.existsSync(file)) {
           res.statusCode = 404
           res.end()
           return

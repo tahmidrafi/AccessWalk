@@ -25,11 +25,26 @@ export const RATING_TEXT: Record<RouteVerdict['rating'], { label: string; icon: 
   likely_blocked: { label: 'Likely blocked for a wheelchair', icon: '✕' },
 }
 
-export function checkResult(c: CheckSummary): string {
-  const n = c.n_findings ?? 0
+/** Verdict box when the only findings are "possible" ones (see lib/tier.ts). */
+export const NONE_CONFIRMED_TEXT = { label: 'No barriers confirmed: possible ones to check on site', icon: '?' }
+
+function plural(n: number, word: string): string {
+  return `${n} ${word}${n === 1 ? '' : 's'}`
+}
+
+/**
+ * ``tiers``: this check's findings split by tier (two-tier reports). Without it
+ * every finding counts as a likely barrier, as in reports before the split.
+ */
+export function checkResult(c: CheckSummary, tiers?: { confirmed: number; possible: number }): string {
+  const n = tiers ? tiers.confirmed + tiers.possible : (c.n_findings ?? 0)
   switch (c.status) {
     case 'ran':
-      return n === 0 ? 'Checked, nothing found' : `${n} likely ${n === 1 ? 'barrier' : 'barriers'}`
+      if (n === 0) return 'Checked, nothing found'
+      if (!tiers) return plural(n, 'likely barrier')
+      if (tiers.possible === 0) return `${plural(n, 'likely barrier')} (confirmed)`
+      if (tiers.confirmed === 0) return `${plural(tiers.possible, 'possible barrier')}, to verify on site`
+      return `${plural(tiers.confirmed, 'likely barrier')} (confirmed), ${tiers.possible} possible`
     case 'not_applicable':
       return 'Not applicable'
     case 'dropped':
