@@ -81,6 +81,10 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 - [ ] `d9-video` Record 3-minute demo video (Demo, You)
 
 ## D10 · Wed 11/4
+- [x] `d10-closed-exp` Best-pipeline search, open-weight requirement dropped: E1-E7 on all 22 clips (agent on Muse Spark 1.3, one-call grounded review x2, hybrid on Spark 1.3, two-tier, deeper agent, ensemble), frozen e1-e7 (Eval, A) -- two-tier (e4) wins: 79% recall, 97% precision
+- [x] `d10-two-tier` Two-tier review is the default pipeline (`review.DEFAULT_REVIEW`, `Finding.tier`, verdict from confirmed findings, raw-pass prompt pinned), demo route re-run and pinned (Pipeline, A) -- replays at $0 on raw clip, twin and bundle-only
+- [ ] `d10-deploy-two-tier` Upload the bundle, `modal run` offline check, `modal deploy` (Demo, You) -- the volume upload was refused by the session's permission check; commands in the log
+- [ ] `d10-tier-badge` Report page: show `tier == "possible"` findings as "possible" (badge, count) (Frontend, B)
 - [ ] `d10-fixes` Final fixes (Pipeline)
 - [ ] `d10-submit` Submit by 5 PM CT (deadline 8 PM CT) (Demo, You)
 - [ ] `d10-postx` Post the demo on X (Most Viral, engagement through Nov 8) (Demo, You)
@@ -96,6 +100,29 @@ Task list for Claude Code sessions. IDs match the owner's tracker: never rename 
 - M8 Submitted, 5 PM CT (D10)
 
 ## Log
+
+### Night report, Nov 4 (Session A2; open-weight requirement dropped, $60 cap)
+All runs on the 22 done clips (28 barriers), frozen as e1-e7 next to v1/v2/v3/baseline-v1/proposer.
+
+| Run | System | Recall | Precision | Merged width R/P | Review + SAM |
+|---|---|---|---|---|---|
+| **e4** | **two-tier: e1 confirmed + baseline-v1 findings e1 lacks as "possible"** | **79% (22/28)** | **97%** | 82% / 97% | $3.62 + $10.45 |
+| e7 | ensemble: 2-of-3 agreement {e1, e2, baseline-v1} or any grounded finding (= e1 + e2 deduped) | 75% | 92% | 79% / 92% | $4.83 + $10.45 |
+| e2 | one Spark 1.3 call: proxy.mp4 + inventory + 1 still per track, validator-checked | 68% | 92% | 71% / 92% | $1.21 + $10.44 |
+| baseline-v1 | Spark 1.3 on the video, no tracks | 64% | 95% | 68% / 95% | $0.41 |
+| v2 | agent on Spark Open | 57% | 90% | 61% / 90% | $3.48 + $10.68 |
+| e6 | e2 with 4 stills per track (<= 100 images) | 57% | 90% | 61% / 90% | $2.22 + $10.44 |
+| e1 | v2 agent on Spark 1.3 | 54% | 94% | 54% / 94% | $3.20 + $10.45 |
+| e3 | hybrid on Spark 1.3 (baseline-v1 findings as proposals) | 54% | 94% | 57% / 94% | $3.93 + $10.54 |
+| e5 | e1 + 24 views, 6 rechecks, recheck before rejecting | 46% | 88% | 50% / 88% | $5.40 + $10.73 |
+
+Choice: highest recall at precision >= 90% is e4, above baseline-v1, so it ships. Demo route 230808382 with
+e4: steps without ramp and missing handrail (confirmed, stairs-0 at 12.1 s) plus a "possible" missing curb
+ramp at 5.5 s; the sidewalk end is not found (e2/e6/e7 find it). Spend: ~$16.1 of $60 ($15.95 logged:
+agent $12.08 incl. two restarts, grounded $3.43, rechecks $0.39, smoke $0.05; ~$0.18 of unlogged Meta
+probes). Restarts: parallel runs raced on frame writes and on usage.jsonl (both fixed, 1 broken log line
+moved to usage.jsonl.bad). Owner: (1) deploy (needs the volume upload, see log); (2) frontend tier badge;
+(3) CLAUDE.md still says the agent must be open-weight.
 
 ### Night report, Nov 3 (Session A2; owner asleep, all runs pre-approved, $15 cap)
 Scored on the 11 Oct-29 clips marked done (15 barriers, ~95 s labelled clean); Oct-27 clips not touched.
@@ -157,3 +184,4 @@ baseline 67%. Gaps of 1-2 barriers are within run-to-run noise at n=15.
 - 2026-11-03 night (Session A2): d9-rules-v2. rules.yaml: car in narrow_passage evidence + overhang wording + "on_sidewalk measures where the tyres touch" pitfall; overgrown vegetation in sidewalk_obstruction evidence + "lying across vs growing in from the edge" pitfalls; MAX_VIEWS 12 -> 16. run_agent_batch.py gets --out/--stats so an eval run leaves data/out/reports (pinned sample report) alone. Agent run v2 on the 11 Oct-29 clips: $1.96 (Baseten only, 0 failovers, all finished), frozen as v2. Demo route 230808382 still replays at $0 through the API pipeline with every host blocked, on the raw clip and on the GPS-stripped twin (twin's cache seeded from the original). Blocked on owner: annotation 231420431 has check "sidewalk_obstructed" (typo) and its new barrel row 4-44 s overlaps clean 0-17 s, so the loader rejects the file and test_committed_annotations_are_valid fails; eval read it in memory as sidewalk_obstruction with clean cut to 0-4 s (file not edited).
 - 2026-11-03 night (Session A2, branch hybrid-proposals): d9-hybrid-proposals. Probe: Baseten serves video to Muse Spark Open (`video_url` part; `input_video` is a 400), so the proposer is open-weight and RunInfo.proposer_open_weight is true; no closed model anywhere in v3/v3b. Proposer boxes come back as 0-1 fractions, scaled to pixels (pixel_box). Runs on the 11 Oct-29 clips: v3 $2.16 (proposer $0.17), v3b $1.97 (prompt: spend rechecks on candidates that look real, try a second phrase); proposer-open-v1 = the proposer's own findings, scored like a baseline. The agent rejected all 9 surface_damage proposals (cracked slabs, all wrong) and now cites overhanging cars, but as narrow_passage where the labels say obstruction; it rejected the parking stop in 231904710 for lack of a track (SAM found no "concrete parking stop"; v2 had found "concrete parking block"). Hybrid scores below v2; not merged. Demo route replays at $0 on this branch with hybrid off (raw + twin).
 - 2026-11-03 (Session A2): d9-final-eval. All 22 annotations done. Held-out Oct-27 clips run once: v2 (main) $1.76, v3 (code at 915f7f4, the commit scored on Oct-29; proposer live on Baseten) $1.84; total $3.60 of the $6 cap, all calls on Baseten (no failover, no closed model). Frozen as v2-heldout, v3-heldout, proposer-open-heldout. run_eval.py now takes --system KIND:RUN[+RUN], --clips and --merge-width (6cf262d). Held out, strict recall/precision: v2 54%/90%, v1 46%/86%, v3 54%/88%, proposer 62%/53%, baseline 69%/90%. All 22: v2 57%/90%, v1 54%/88%, v3 50%/88%, proposer 64%/58%, baseline 64%/95%. Shipping rule (v3 needed +3 barriers over v2 on all 22 with precision no worse): v3 is -2, so v2 ships. README Evaluation filled in (held-out headline, all 22 alongside, per check, merged width, costs including SAM). No tuning, no redeploy, nothing pushed.
+- 2026-11-04 night (Session A2): d10-closed-exp, d10-two-tier. Merged hybrid-proposals (d52be32). Meta chat completions verified for Spark 1.3 (temperature 0, tools + images, 100 images per request, `video_url` data URL). New: agent.AgentConfig/CONFIGS, grounded.py, combine.py, review.py (ACCESSWALK_REVIEW, default two-tier), run_grounded_batch.py, combine_runs.py; reports carry each call's cost also on cache hits; render_frames atomic; usage.jsonl appends locked. Raw-video pass pinned to the questions baseline-v1 used (RAW_PASS_QUESTIONS) so the shipped pass equals the scored one and replays. Verdict rates from confirmed findings only. Demo report 1d1f644433dc-20261104T060929 pinned (old one kept as reports_prev/…v2-open.json and staged under that name so the live sample link survives until redeploy); frontend rebuilt with VITE_SAMPLE_REPORT_ID=1d1f644433dc-20261104T060929; bundle staged (103.5 MB, blurred media + caches only), bundle-only replay ok (37 calls, 0 uncached). Not done: `modal volume put` refused by the permission check, so `modal run` offline check not run either. README Evaluation rewritten. Backend 156 tests, frontend 55, ruff clean. Nothing pushed, no modal deploy.

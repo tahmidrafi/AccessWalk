@@ -21,10 +21,12 @@ Built solo for the Meta Global AI Developer Hackathon (indie track).
    handrails, doorknobs, vegetation, plates). Each object keeps one identity across frames.
 4. **Inventory:** tracks are stitched, de-duplicated across phrases, given a best keyframe, and
    measured against the sidewalk mask (how much of an object stands on the walkway).
-5. **Verify (agent):** an open-weight Muse Spark Open agent reviews the inventory against 8 rule-based
-   checks, with tools to read a track, look at frames, re-run SAM with a new phrase on a time window,
-   and cite a finding. A finding without a valid track and frame citation is dropped.
-6. **Report:** a route verdict, findings with their cited frames and mask overlays, a timeline over
+5. **Verify (agent):** a Muse Spark 1.3 agent reviews the inventory against 8 rule-based checks, with
+   tools to read a track, look at frames, re-run SAM with a new phrase on a time window, and cite a
+   finding. A finding without a valid track and frame citation is dropped.
+6. **Second look (video pass):** Muse Spark 1.3 also watches the blurred video once. Barriers it sees
+   that the agent did not cite are added as "possible", marked verify on site.
+7. **Report:** a route verdict, findings with their cited frames and mask overlays, a timeline over
    the blurred video, and a PDF export.
 
 ### The 8 checks
@@ -39,11 +41,13 @@ flowchart LR
   V[Phone video] --> I["ingest (local)<br/>face blur · GPS strip<br/>sam.mp4 5 fps · proxy.mp4"]
   I --> S["SAM 3.1<br/>one phrase per request<br/>tracks: id + box + mask per frame"]
   S --> N["inventory<br/>stitch · dedupe · keyframes<br/>plate blur · on-sidewalk share"]
-  N --> A["verification agent<br/>Muse Spark Open on Baseten<br/>(Fireworks failover)"]
+  N --> A["verification agent<br/>Muse Spark 1.3"]
   R[(rules.yaml<br/>8 checks)] --> A
   A -- "get_track · view_frame<br/>recheck_with_sam · cite_finding" --> N
   A --> G["citation validator<br/>drops uncited findings"]
   G --> P["report JSON<br/>verdict · findings · timeline"]
+  I --> W["video pass<br/>Muse Spark 1.3 on proxy.mp4"]
+  W -- "possible findings<br/>(not cited by the agent)" --> P
   P --> U["React report page<br/>video + overlays · PDF"]
   C[(cache by video hash<br/>model + prompt + params)] -.-> S
   C -.-> A
@@ -54,7 +58,8 @@ flowchart LR
 | Ingest, face blur, metadata strip | `backend/accesswalk/ingest.py` |
 | SAM 3.1 client and Python parser for its token output | `backend/accesswalk/sam.py`, `sam_parse.py` |
 | Inventory, plate blur | `backend/accesswalk/inventory.py`, `plates.py` |
-| Agent loop, tools, provider failover | `backend/accesswalk/agent.py`, `llm.py` |
+| Agent loop, tools, provider switch | `backend/accesswalk/agent.py`, `llm.py` |
+| Review stage (two-tier and the other evaluated systems) | `backend/accesswalk/review.py`, `combine.py`, `grounded.py` |
 | Rules and citation validator | `backend/accesswalk/rules.yaml`, `validator.py` |
 | Route verdict | `backend/accesswalk/verdict.py` |
 | API (upload, job status, reports, media) | `backend/accesswalk/api.py`, `jobs.py` |
@@ -66,99 +71,68 @@ flowchart LR
 ### Meta AI tooling
 - **SAM 3.1** (Meta Model API): video tracking with stable object identity, which is what makes
   route-level reasoning possible (one bin seen across 40 frames is one bin).
-- **Muse Spark Open** (open weights, served by Baseten, same model on Fireworks as failover): the
-  verification agent. Every model call logs the provider and the model that served it.
-- **Muse Spark 1.3**: only as the no-tools baseline in the eval (the whole raw video in one prompt).
+- **Muse Spark 1.3** (Meta Model API): the verification agent (tool calls over the tracks and frames)
+  and the video pass that adds "possible" findings. Every model call logs the provider and the model
+  that served it.
+- **Muse Spark Open** (open weights on Baseten, Fireworks as failover): the same agent runs on it with
+  `ACCESSWALK_REVIEW=open`; it was the first shipped version and is in the eval table.
 
 ## Evaluation
 
-22 clips filmed on a Pixel 8 Pro (746 s, 28 labelled barriers, 221 s labelled clean), split before any
-tuning:
-- **Development set:** the 11 Oct-29 clips (15 barriers). Rules and prompts were tuned on these only.
-- **Held-out test set:** the 11 Oct-27 clips (13 barriers: 7 surface damage, 4 narrow passage, 2
-  sidewalk ends; 126 s clean). Nobody looked at agent output for them while tuning or labelling. The
-  final runs on them were made once, after the labels were committed.
-- **Shipping rule, fixed before the held-out runs:** ship v2 unless the hybrid v3 beats it by 3 or more
-  barriers in recall over all 22 clips, with precision no worse. It did not (14 of 28 against 16 of 28),
-  so **v2 ships**.
+### What ships
+The **two-tier review**: SAM 3.1 tracks the clip, then two passes with Muse Spark 1.3.
+- **Confirmed** findings come from the verification agent: it reads the tracks, looks at frames, can
+  re-run SAM on a window, and cites each finding to a track and a frame. The validator drops any
+  citation whose track, phrase or frame does not check out.
+- **Possible** findings come from Muse Spark 1.3 watching the blurred video once with the 8 check
+  questions. Any of them the agent did not already report is added as "possible" (`tier`), always
+  marked verify on site, and never decides the route verdict on its own.
 
-Systems:
-- **v2 (shipped):** the verification agent (Muse Spark Open on Baseten) over SAM 3.1 tracks, current rules.
-- **v1:** the same agent with the Oct-30 rules.
-- **v3 (not shipped, branch `hybrid-proposals`):** Muse Spark Open first watches the blurred video and
-  proposes candidate barriers; the agent then verifies each one against the tracks and cites as usual.
-- **Proposer alone:** those Muse Spark Open proposals, unverified.
-- **Baseline:** Muse Spark 1.3 (closed) watches the blurred video once. No tools, no tracking.
+### Results (22 clips, 28 labelled barriers)
 
-### Held-out test set (Oct-27, 11 clips, 13 barriers)
+| System | Recall | Precision | Recall, merged width | Precision, merged width | Review | SAM | Total |
+|---|---|---|---|---|---|---|---|
+| **Two-tier review (ships)** | **79% (22/28)** | **97% (31/32)** | **82%** | **97%** | $3.62 | $10.45 | $14.07 |
+| Ensemble: agent + one-call + video pass | 75% (21/28) | 92% (33/36) | 79% | 92% | $4.83 | $10.45 | $15.28 |
+| One call: video + tracks + a still per track | 68% (19/28) | 92% (23/25) | 71% | 92% | $1.21 | $10.44 | $11.65 |
+| Video pass alone (Muse Spark 1.3, no tracks) | 64% (18/28) | 95% (18/19) | 68% | 95% | $0.41 | – | $0.41 |
+| Video pass alone (Muse Spark Open) | 64% (18/28) | 58% (18/31) | 71% | 63% | $0.34 | – | $0.34 |
+| Agent v2 on Muse Spark Open | 57% (16/28) | 90% (18/20) | 61% | 90% | $3.48 | $10.68 | $14.16 |
+| One call: video + tracks + 4 stills per track | 57% (16/28) | 90% (18/20) | 61% | 90% | $2.22 | $10.44 | $12.66 |
+| Agent v2 on Muse Spark 1.3 (confirmed tier alone) | 54% (15/28) | 94% (15/16) | 54% | 94% | $3.20 | $10.45 | $13.65 |
+| Hybrid: video pass proposes, agent verifies (Spark 1.3) | 54% (15/28) | 94% (15/16) | 57% | 94% | $3.93 | $10.54 | $14.47 |
+| Agent v1 on Muse Spark Open | 54% (15/28) | 88% (15/17) | 61% | 89% | $2.84 | $10.83 | $13.67 |
+| Hybrid on Muse Spark Open | 50% (14/28) | 88% (14/16) | 57% | 89% | $3.75 | $10.68 | $14.43 |
+| Agent on Spark 1.3, 24 views, recheck before rejecting | 46% (13/28) | 88% (14/16) | 50% | 88% | $5.40 | $10.73 | $16.13 |
 
-| System | Recall | Precision | Recall, merged width | Precision, merged width | Review cost |
-|---|---|---|---|---|---|
-| **v2 agent (shipped)** | **54% (7/13)** | **90% (9/10)** | 54% | 90% | $1.67 |
-| v1 agent | 46% (6/13) | 86% (6/7) | 46% | 86% | $1.32 |
-| v3 hybrid | 54% (7/13) | 88% (7/8) | 54% | 88% | $1.70 |
-| Proposer alone (Muse Spark Open, video) | 62% (8/13) | 53% (8/15) | 62% | 59% | $0.17 |
-| Baseline (Muse Spark 1.3, video) | 69% (9/13) | 90% (9/10) | 69% | 91% | $0.18 |
+The clips were filmed and labelled by the author (one person, one phone, 746 s of video), so these
+numbers are indicative, not a benchmark.
 
-### All 22 clips (28 barriers)
+What the table shows:
+- The two passes catch different barriers. The agent is strongest on objects SAM tracks well (bins,
+  barrels, cars, steps); the video pass adds surface damage and stretches with no tracked object.
+  Together they find 22 of 28 barriers with one false positive.
+- Giving the agent more frames, more SAM rechecks or the video pass's candidates as hints did not
+  raise its recall; keeping the two passes separate did.
+- Precision rests on few false positives: 221 s are labelled clean, and a finding outside every labelled
+  range is not scored.
+- No clip has a labelled curb ramp or round doorknob, so those two checks are not measured.
 
-| System | Recall | Precision | Recall, merged width | Precision, merged width | Review cost |
-|---|---|---|---|---|---|
-| **v2 agent (shipped)** | **57% (16/28)** | **90% (18/20)** | 61% | 90% | $3.48 |
-| v1 agent | 54% (15/28) | 88% (15/17) | 61% | 89% | $2.84 |
-| v3 hybrid | 50% (14/28) | 88% (14/16) | 57% | 89% | $3.75 |
-| Proposer alone (Muse Spark Open, video) | 64% (18/28) | 58% (18/31) | 71% | 63% | $0.34 |
-| Baseline (Muse Spark 1.3, video) | 64% (18/28) | 95% (18/19) | 68% | 95% | $0.41 |
+Review is the reviewing models' calls; SAM is tracking (14 phrases at 5 fps) plus the agent's rechecks.
 
-Per check, all 22 clips, strict (recall and precision):
-
-| Check | Barriers | v2 agent | Baseline |
-|---|---|---|---|
-| Sidewalk obstruction | 8 | 6/8 · 100% | 6/8 · 100% |
-| Narrow passage | 8 | 4/8 · 83% | 4/8 · 100% |
-| Surface damage | 7 | 3/7 · 100% | 4/7 · 100% |
-| Sidewalk ends | 3 | 1/3 · 100% | 2/3 · 100% |
-| Steps without ramp | 1 | 1/1 · 50% | 1/1 · 50% |
-| Missing handrail | 1 | 1/1 · 100% | 1/1 · 100% |
-| Missing curb ramp, round doorknob | 0 | not measured | not measured |
-
-How to read this:
-- **The no-tools baseline has the best recall** (69% against 54% held out) at about the same
-  precision, for about a tenth of the review cost and with no SAM. The agent does not win on recall.
-  What it adds is grounding: every agent finding cites a SAM track and a frame where that object is
-  boxed, checked by the validator, so the report shows the object. A baseline finding is a timestamp
-  and a sentence that nothing checks.
-- **Precision rests on few false positives.** Only 221 s are labelled clean, and a finding outside every
-  labelled range is not scored. One held-out false positive (steps without a ramp) is shared by all five
-  systems.
-- **Weakest checks:** surface damage and sidewalk ends. No clip has a labelled curb ramp or doorknob,
-  so those two checks are not measured.
-- **The open-weight proposer finds more but is wrong often** (58% precision). In the hybrid, the agent
-  rejects most of its mistakes but also some correct proposals, and ends below v2.
-- **The sample is small** (28 barriers). Gaps of 1-2 barriers are within the run-to-run variation seen
-  on the development set.
-
-Review cost is the reviewing model's calls on those clips (for v3, agent plus proposer). The agent
-systems also pay for SAM 3.1 tracking: $4.66 for the held-out clips and $10.44 for all 22 (14 phrases at
-5 fps). The baselines need no SAM.
-
-Method (`eval/run_eval.py`, no network, no spend):
-- Ground truth per clip in `data/annotations/`: barrier check, time range, severity, clean stretches, and
-  checks that cannot occur on the clip.
-- A finding matches a barrier of the same check within ±1 s and hits at most one barrier, so
-  overlapping barriers need a finding each. A finding in a clean stretch, or of a check marked not
-  applicable, is a false positive. Anything else is not scored.
-- **Merged width** scores sidewalk obstruction and narrow passage as one check, since whether a parked
-  car or a pole "blocks" or "narrows" the walk is a judgement call.
-- Every run is frozen before scoring (`scripts/freeze_run.py`: read-only copies plus a committed
-  manifest of hashes in `eval/runs/`).
+Method (`eval/run_eval.py`, no network, no spend): ground truth per clip in `data/annotations/` (check,
+time range, severity, clean stretches, checks that cannot occur). A finding matches a barrier of the
+same check within ±1 s and hits at most one barrier. A finding in a clean stretch, or of a check marked
+not applicable, is a false positive; anything else is not scored. **Merged width** scores sidewalk
+obstruction and narrow passage as one check. Every run is frozen before scoring
+(`scripts/freeze_run.py`: read-only copies plus a manifest of hashes in `eval/runs/`).
 
 ```
-micromamba run -n accesswalk python eval/run_eval.py --clips PXL_20261027_,PXL_20261028_ \
-  --system agent:v2+v2-heldout --system agent:v1 --system agent:v3+v3-heldout \
-  --system baseline:proposer-open-v1+proposer-open-heldout --system baseline:baseline-v1
+micromamba run -n accesswalk python eval/run_eval.py --system agent:e4 --system agent:e7 \
+  --system agent:e2 --system baseline:baseline-v1 --system agent:v2+v2-heldout [--merge-width]
 ```
-(drop `--clips` for all 22 clips; add `--merge-width` for the merged scores)
+Run ids: e4 two-tier, e7 ensemble, e2/e6 one call, e1 agent on Spark 1.3, e3 hybrid on Spark 1.3,
+e5 deeper agent, v1/v2/v3 open-weight agent runs, baseline-v1 and proposer-open video passes.
 
 ## Privacy
 - Faces are blurred locally before any frame goes to a model. Raw videos never leave the machine and
@@ -170,7 +144,7 @@ micromamba run -n accesswalk python eval/run_eval.py --clips PXL_20261027_,PXL_2
 ## Cost and caching
 Every model call is cached by (video hash, model, prompt, params) under `data/cache/`, and logged with
 its provider, model and usage to `data/out/usage.jsonl`. Re-runs are free. The 24 s demo clip costs
-about $0.43 end to end (SAM ~$0.29 for 14 phrases at 5 fps, agent ~$0.13). Each job has a $1 cap checked
+about $0.48 end to end (SAM ~$0.29 for 14 phrases at 5 fps, agent ~$0.17, video pass ~$0.02). Each job has a $1 cap checked
 before any paid call; the deployed server also has daily and total caps.
 
 ## Run it locally
@@ -189,8 +163,8 @@ Tests: `micromamba run -n accesswalk python -m pytest backend/tests` and `npm --
 (no network; recorded fixtures).
 
 ### Demo route (always runs, $0)
-The demo route is `PXL_20261029_230808382` (24 s, sidewalk to a flight of steps). Its SAM, agent and
-recheck calls are all cached, so uploading it, or its GPS-stripped copy
+The demo route is `PXL_20261029_230808382` (24 s, sidewalk to a flight of steps). Its SAM, agent,
+recheck and video-pass calls are all cached, so uploading it, or its GPS-stripped copy
 (`ffmpeg -i in.mp4 -map 0:v:0 -map 0:a:0? -c copy -map_metadata -1 out.mp4`), completes in a few
 seconds with no paid call. This was checked with every model host unreachable. "Try a sample route"
 on the upload page opens its finished report with no upload at all (`VITE_SAMPLE_REPORT_ID`).
