@@ -13,7 +13,7 @@ route, each tied to an object [SAM 3.1](https://dev.meta.ai/docs/sam/overview) t
 </table>
 
 **Live:** https://rafi-tahmid--accesswalk-web.us-east.modal.run (open "Try a sample route").
-Built solo for the Meta Global AI Developer Hackathon (indie track).
+Built solo for the [Meta Global AI Developer Hackathon](https://cerebralvalley.ai/e/meta-ai-developer-hackathon) (indie track).
 
 ## What it does
 
