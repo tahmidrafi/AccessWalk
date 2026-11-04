@@ -185,6 +185,15 @@
           ],
           "default": null,
           "title": "Frame Url"
+        },
+        "tier": {
+          "default": "confirmed",
+          "enum": [
+            "confirmed",
+            "possible"
+          ],
+          "title": "Tier",
+          "type": "string"
         }
       },
       "required": [

@@ -5,9 +5,10 @@
 
 Per clip, from data/cache/<sha>/ only: meta.json, inventory.json, proxy.mp4 (faces
 and plates blurred), proxy_plates.json, frames/*.jpg (faces and plates blurred),
-masks/ (PNGs + decoded mask arrays), sam/ and llm/ (cached model responses) and the
+masks/ (PNGs + decoded mask arrays), sam/, llm/, baseline/ and grounded/ (cached model
+responses: the two-tier review replays the raw-video pass from baseline/) and the
 recheck responses. Never: data/raw, proxy_noplate.mp4 (faces only), sam.mp4 and
-recheck clips (plates not blurred), audio.wav, baseline/, logs. Plus the clip's
+recheck clips (plates not blurred), audio.wav, logs. Plus the clip's
 report from data/out/reports/<clip>.json.
 
 --twin: a GPS-stripped copy of the clip (ffmpeg -c copy -map_metadata -1), the file
@@ -34,7 +35,8 @@ BUNDLE = REPO_ROOT / "data" / "out" / "deploy_bundle"
 REPORTS = REPO_ROOT / "data" / "out" / "reports"
 VOLUME = "accesswalk-data"
 FILES = ["meta.json", "inventory.json", "proxy.mp4", "proxy_plates.json"]
-DIRS = {"frames": ("*.jpg", ".plates"), "masks": ("*.png", "*.npy"), "sam": ("*.json",), "llm": ("*.json",)}
+DIRS = {"frames": ("*.jpg", ".plates"), "masks": ("*.png", "*.npy"), "sam": ("*.json",), "llm": ("*.json",),
+        "baseline": ("*.json",), "grounded": ("*.json",)}
 
 
 def stage_clip(sha: str) -> int:

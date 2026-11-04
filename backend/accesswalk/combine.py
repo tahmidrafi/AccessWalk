@@ -65,7 +65,8 @@ def two_tier(conf: Report, poss: Report, run_id: str) -> Report:
         note = f.evidence_note
         if not _is_grounded(poss, f):
             note = POSSIBLE_PREFIX + note
-        parts.append((poss, f.model_copy(update={"verify_manually": True, "evidence_note": note[:900]})))
+        parts.append((poss, f.model_copy(update={"verify_manually": True, "evidence_note": note[:900],
+                                                  "tier": "possible"})))
     return merge(conf, parts, run_id, [conf, poss])
 
 

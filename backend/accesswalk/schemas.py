@@ -100,6 +100,9 @@ class Finding(BaseModel):
     reference: str | None = None  # guideline the rule is based on, from the rules YAML
     related_track_ids: list[str] = Field(default_factory=list)  # other objects in the evidence
     frame_url: str | None = None  # blurred evidence frame with the box drawn
+    # Added Nov 4 (additive): "possible" = seen only by the raw-video pass (Muse Spark 1.3
+    # watching the whole clip), with no SAM track behind it; always verify_manually.
+    tier: Literal["confirmed", "possible"] = "confirmed"
 
 
 class CheckSummary(BaseModel):

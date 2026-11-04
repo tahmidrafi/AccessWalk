@@ -24,9 +24,10 @@ from pathlib import Path
 from . import baseline, combine, grounded, hybrid
 from .agent import CONFIGS, AgentContext, run_agent
 from .ingest import DEFAULT_OUT_ROOT
+from .inventory import render_frames
 from .schemas import Report
 
-DEFAULT_REVIEW = "open"
+DEFAULT_REVIEW = "two-tier"  # the eval winner (Nov 4): README "Evaluation"
 
 Review = Callable[[AgentContext, Path, float], tuple[Report, float]]
 
@@ -44,8 +45,17 @@ def _raw(ctx: AgentContext, out_root: Path) -> tuple[Report, float]:
     return report, 0.0 if cached else report.run.cost_usd  # the report shows the call's cost
 
 
-def _keep_id(combined: Report, base: Report) -> Report:
-    return combined.model_copy(update={"report_id": base.report_id})
+def _finish(ctx: AgentContext, combined: Report, base: Report, out_root: Path) -> Report:
+    """Keep the agent's report id, and give findings from the raw-video pass a rendered
+    (face- and plate-blurred) frame like every other finding."""
+    sha = ctx.meta.video_sha256
+    need = {f.frame_index for f in combined.findings if not f.frame_url}
+    if need:
+        render_frames(ctx.meta, need, ctx.plate_tracks, out_root)
+    findings = [f if f.frame_url else
+                f.model_copy(update={"frame_url": f"/media/{sha}/frames/{f.frame_index}.jpg"})
+                for f in combined.findings]
+    return combined.model_copy(update={"report_id": base.report_id, "findings": findings})
 
 
 def review_open(ctx, out_root, budget):
@@ -91,7 +101,7 @@ def review_grounded_many(ctx, out_root, budget):
 def review_two_tier(ctx, out_root, budget):
     raw, spent = _raw(ctx, out_root)
     report, more = _agent(ctx, "spark13", max(0.0, budget - spent))
-    return _keep_id(combine.two_tier(report, raw, "two-tier"), report), spent + more
+    return _finish(ctx, combine.two_tier(report, raw, "two-tier"), report, out_root), spent + more
 
 
 def review_ensemble(ctx, out_root, budget):
@@ -100,7 +110,8 @@ def review_ensemble(ctx, out_root, budget):
                          rules=ctx.rules, plate_tracks=ctx.plate_tracks)
     g, g_spent = _grounded(g_ctx, out_root, "one")
     report, more = _agent(ctx, "spark13", max(0.0, budget - spent - g_spent))
-    return _keep_id(combine.ensemble([report, g], raw, "ensemble"), report), spent + g_spent + more
+    combined = combine.ensemble([report, g], raw, "ensemble")
+    return _finish(ctx, combined, report, out_root), spent + g_spent + more
 
 
 REVIEWS: dict[str, Review] = {

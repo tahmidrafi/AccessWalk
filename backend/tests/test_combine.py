@@ -32,6 +32,7 @@ def test_two_tier_adds_unmatched_raw_findings_as_possible():
                                                                 ("steps_without_ramp", 20_000)]
     possible = out.findings[1]
     assert possible.verify_manually and possible.evidence_note.startswith(POSSIBLE_PREFIX)
+    assert possible.tier == "possible" and out.findings[0].tier == "confirmed"
     assert out.run.cost_usd == round(conf.run.cost_usd + poss.run.cost_usd, 4)
 
 
