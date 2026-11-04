@@ -1,20 +1,26 @@
 {
   "clip": "PXL_20261027_220924271",
   "annotator": "tahmid",
-  "status": "draft",
+  "status": "done",
   "duration_s": 21.868,
-  "barriers": [],
+  "barriers": [
+    {
+      "check": "sidewalk_ends",
+      "t": [
+        1.5,
+        21.868
+      ],
+      "sev": "high",
+      "note": "Sidewalk slabs buried under soil, grass and straw; looks like the walk ends. Flattened cardboard in the gutter, not blocking.",
+      "verify": true,
+      "temporary": false
+    }
+  ],
   "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "not_applicable": [
+    "round_doorknob",
+    "steps_without_ramp",
+    "missing_handrail"
+  ],
+  "notes": ""
 }

@@ -1,20 +1,48 @@
 {
   "clip": "PXL_20261028_002145281",
   "annotator": "tahmid",
-  "status": "draft",
+  "status": "done",
   "duration_s": 34.708,
-  "barriers": [],
+  "barriers": [
+    {
+      "check": "narrow_passage",
+      "t": [
+        1.0,
+        20.5
+      ],
+      "sev": "medium",
+      "note": "thorny bush 1 and branches encroaches into the sidewalk area and touching the wheelchair user",
+      "verify": true,
+      "temporary": false
+    },
+    {
+      "check": "narrow_passage",
+      "t": [
+        7.5,
+        24.5
+      ],
+      "sev": "low",
+      "note": "thorny bush 2 intruding into the sidewalk area and touching the wheelchair user",
+      "verify": false,
+      "temporary": false
+    },
+    {
+      "check": "surface_damage",
+      "t": [
+        23.0,
+        34.708
+      ],
+      "sev": "high",
+      "note": "storm drain about 1 feeet wide 5-6 inches deep cutting across the sidewalk, making wheelchairs difficult/impossible to cross",
+      "verify": true,
+      "temporary": false
+    }
+  ],
   "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "not_applicable": [
+    "steps_without_ramp",
+    "missing_handrail",
+    "round_doorknob"
+  ],
+  "notes": "Low-light test clip (filmed ~7:20 PM)"
 }

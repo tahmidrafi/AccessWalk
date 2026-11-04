@@ -1,20 +1,31 @@
 {
   "clip": "PXL_20261027_220842365",
   "annotator": "tahmid",
-  "status": "draft",
+  "status": "done",
   "duration_s": 30.006,
-  "barriers": [],
-  "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "barriers": [
+    {
+      "check": "narrow_passage",
+      "t": [
+        4.5,
+        30.006
+      ],
+      "sev": "medium",
+      "note": "The sidewalk gradually engulfed by mud-grass just before going on a culvert, during rain the wet mud can trap wheelchair wheels.",
+      "verify": "true",
+      "temporary": false
+    }
+  ],
+  "clean": [
+    [
+      0.0,
+      4.5
+    ]
+  ],
+  "not_applicable": [
+    "round_doorknob",
+    "steps_without_ramp",
+    "missing_handrail"
+  ],
+  "notes": "Soil and straw creep over the slab edges toward the culvert"
 }

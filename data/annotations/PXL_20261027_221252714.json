@@ -1,20 +1,26 @@
 {
   "clip": "PXL_20261027_221252714",
   "annotator": "tahmid",
-  "status": "draft",
+  "status": "done",
   "duration_s": 26.637,
-  "barriers": [],
+  "barriers": [
+    {
+      "check": "sidewalk_ends",
+      "t": [
+        1.0,
+        26.637
+      ],
+      "sev": "high",
+      "note": "Sidewalk crosses a culvert over a usually dry creek, guardrail on the creek side, then ends abruptly into grass; no curb cut to the road.",
+      "verify": false,
+      "temporary": false
+    }
+  ],
   "clean": [],
-  "not_applicable": [],
-  "notes": "",
-  "_example_barrier": {
-    "check": "surface_damage",
-    "t": [
-      10.0,
-      12.5
-    ],
-    "sev": "medium",
-    "note": "what and where",
-    "verify": false
-  }
+  "not_applicable": [
+    "round_doorknob",
+    "steps_without_ramp",
+    "missing_handrail"
+  ],
+  "notes": ""
 }
