@@ -52,7 +52,7 @@ app = modal.App("accesswalk", image=image)
 @app.function(
     volumes={f"{APP}/data": data},
     secrets=[modal.Secret.from_name("accesswalk"), modal.Secret.from_name("accesswalk-upload")],
-    cpu=2.0, memory=4096, timeout=900, scaledown_window=900, max_containers=1,
+    cpu=2.0, memory=4096, timeout=900, scaledown_window=900, max_containers=1, min_containers=1,
 )
 @modal.concurrent(max_inputs=20)
 @modal.asgi_app()
